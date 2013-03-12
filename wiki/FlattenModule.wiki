@@ -8,19 +8,19 @@
 	
   - Advantages -
 	
-	
-* Allows the developer to draw a large number of objects much faster than usual.
+
+  * Allows the developer to draw a large number of objects much faster than usual.
 	
 	
   - Disadvantages -
-	
-	
-* The flattened mesh is a single object, so you can't really do any dynamics (moving individual objects on part of a flattened mesh) without actually moving the vertices / faces for the mesh.
-	
-* This process forces you to create a mesh that has a high number of faces, thereby raising load times considerably.
-	
-* The Flatten function moves the source object's vertices to match the objects in the objects list, so this method only works correctly when the both the source and destination objects share materials (since the BGE can't re-assign materials to the vertices).
-	
-* For speed, there's no check to ensure that you have enough faces in your destination mesh to 'cover' all of the faces in the source meshes. Be aware of this if you find your destination mesh seems 'incomplete'.
+
+
+  * The flattened mesh is a single object, so you can't really do any dynamics (moving individual objects on part of a flattened mesh) without actually moving the vertices / faces for the mesh.
+
+  * This process forces you to create a mesh that has a high number of faces, thereby raising load times considerably.
+
+  * The Flatten function moves the source object's vertices to match the objects in the objects list, so this method only works correctly when the both the source and destination objects share materials (since the BGE can't re-assign materials to the vertices).
+
+  * For speed, there's no check to ensure that you have enough faces in your destination mesh to 'cover' all of the faces in the source meshes. Be aware of this if you find your destination mesh seems 'incomplete'.
 
   To use the Flatten module with the example, just download both and place them next to each other. I didn't place the module in the same folder as the example to reduce redundancy.
