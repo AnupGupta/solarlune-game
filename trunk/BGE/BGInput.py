@@ -1,36 +1,49 @@
+"""
+Copyright (c) 2013 SolarLune
 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
+(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+P.S. It would be nice if you could attribute me for the creation of this and my other scripts. Thanks!
 """
-An input handling module. Useful for setting up key bindings.
-"""
+
+KEYDOWN = 0
+KEYUP = 1
+KEYPRESSED = 2
+KEYRELEASED = 3
+
+JOYBUTTONDOWN = 4
+JOYBUTTONUP = 5
+JOYBUTTONPRESSED = 6
+JOYBUTTONRELEASED = 7
+
+JOYHATDOWN = 8
+JOYHATUP = 9
+JOYHATPRESSED = 10
+JOYHATRELEASED = 11
+
+JOYAXIS = 12                # Return the percentage that the axis is being pressed (the axis values themselves)
+JOYAXISDOWN = 13        # Otherwise, return 0 or 1 values
+JOYAXISUP = 14
+JOYAXISPRESSED = 15
+JOYAXISRELEASED = 16
+
+MOUSEAXIS = 17
 
 class CInputKey():
     
     """
     Tests for input from keyboard and joystick.
     """
-    
-    KEYDOWN = 0
-    KEYUP = 1
-    KEYPRESSED = 2
-    KEYRELEASED = 3
-    
-    JOYBUTTONDOWN = 4
-    JOYBUTTONUP = 5
-    JOYBUTTONPRESSED = 6
-    JOYBUTTONRELEASED = 7
-    
-    JOYHATDOWN = 8
-    JOYHATUP = 9
-    JOYHATPRESSED = 10
-    JOYHATRELEASED = 11
-    
-    JOYAXIS = 12                # Return the percentage that the axis is being pressed (the axis values themselves)
-    JOYAXISDOWN = 13        # Otherwise, return 0 or 1 values
-    JOYAXISUP = 14
-    JOYAXISPRESSED = 15
-    JOYAXISRELEASED = 16
-    
-    MOUSEAXIS = 17
     
     def __init__(self, inputtype, keycode, axisdirection = 1, deadzone = 0.1, joyindex = 0, scalar = 1.0):
         
@@ -285,7 +298,7 @@ class CInputDevice():
     
     device = CInputDevice()
     
-    device.Add('jump', CInputKey.KEYPRESSED, events.ZKEY, 'keyboard')
+    device.Add('jump', KEYPRESSED, events.ZKEY, 'keyboard')
     
     device.Poll('keyboard')
     
