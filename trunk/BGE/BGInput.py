@@ -1,3 +1,7 @@
+from bge import logic
+
+import math
+
 """
 Copyright (c) 2013 SolarLune
 
@@ -79,25 +83,25 @@ class CInputKey():
         
         joy = logic.joysticks[self.joyindex]
     
-        if self.inputtype == self.KEYDOWN:
+        if self.inputtype == KEYDOWN:
             
             if logic.keyboard.events[self.keycode] == logic.KX_INPUT_ACTIVE:    self.active = self.scalar
                 
             else:   self.active = 0
             
-        elif self.inputtype == self.KEYUP:
+        elif self.inputtype == KEYUP:
             
             if not logic.keyboard.events[self.keycode] == logic.KX_INPUT_ACTIVE: self.active = self.scalar
             
             else:   self.active = 0
             
-        elif self.inputtype == self.KEYPRESSED:
+        elif self.inputtype == KEYPRESSED:
             
             if logic.keyboard.events[self.keycode] == logic.KX_INPUT_JUST_ACTIVATED: self.active = self.scalar
             
             else:   self.active = 0
             
-        elif self.inputtype == self.KEYRELEASED:
+        elif self.inputtype == KEYRELEASED:
             
             if logic.keyboard.events[self.keycode] == logic.KX_INPUT_JUST_RELEASED: self.active = self.scalar
             
@@ -105,7 +109,7 @@ class CInputKey():
           
         if joy != None:
                         
-            if self.inputtype == self.JOYBUTTONDOWN:
+            if self.inputtype == JOYBUTTONDOWN:
          
                 if self.keycode in joy.activeButtons:
                 
@@ -115,7 +119,7 @@ class CInputKey():
                     
                     self.active = 0
 
-            elif self.inputtype == self.JOYBUTTONUP:
+            elif self.inputtype == JOYBUTTONUP:
                 
                 if not self.keycode in joy.activeButtons:
                 
@@ -125,7 +129,7 @@ class CInputKey():
                     
                     self.active = 0
                
-            elif self.inputtype == self.JOYBUTTONPRESSED:
+            elif self.inputtype == JOYBUTTONPRESSED:
                   
                 if self.keycode in joy.activeButtons and self.prevstate == 0:
                    
@@ -137,7 +141,7 @@ class CInputKey():
                     
                 self.prevstate = self.keycode in joy.activeButtons
                     
-            elif self.inputtype == self.JOYBUTTONRELEASED:
+            elif self.inputtype == JOYBUTTONRELEASED:
 
                 if not self.keycode in joy.activeButtons and self.prevstate == 1:
                    
@@ -149,7 +153,7 @@ class CInputKey():
                     
                 self.prevstate = self.keycode in joy.activeButtons
                 
-            elif self.inputtype == self.JOYHATDOWN:
+            elif self.inputtype == JOYHATDOWN:
                 
                 if self.keycode in joy.hatValues:
                 
@@ -159,7 +163,7 @@ class CInputKey():
                     
                     self.active = 0
                     
-            elif self.inputtype == self.JOYHATUP:
+            elif self.inputtype == JOYHATUP:
             
                 if not self.keycode in joy.hatValues:
                 
@@ -169,7 +173,7 @@ class CInputKey():
                     
                     self.active = 0
                     
-            elif self.inputtype == self.JOYHATPRESSED:
+            elif self.inputtype == JOYHATPRESSED:
                 
                 if self.keycode in joy.hatValues and self.prevstate == 0:
                    
@@ -181,7 +185,7 @@ class CInputKey():
                     
                 self.prevstate = self.keycode in joy.hatValues
 
-            elif self.inputtype == self.JOYHATRELEASED:
+            elif self.inputtype == JOYHATRELEASED:
                 
                 if not self.keycode in joy.hatValues and self.prevstate == 1:
                    
@@ -193,7 +197,7 @@ class CInputKey():
                     
                 self.prevstate = self.keycode in joy.hatValues
             
-            elif self.inputtype == self.JOYAXISDOWN:
+            elif self.inputtype == JOYAXISDOWN:
                 
                 av = joy.axisValues[self.keycode]
                 
@@ -207,7 +211,7 @@ class CInputKey():
                     
                     self.active = 0.0
             
-            elif self.inputtype == self.JOYAXISUP:
+            elif self.inputtype == JOYAXISUP:
                 
                 av = joy.axisValues[self.keycode]
                 
@@ -221,7 +225,7 @@ class CInputKey():
                     
                     self.active = 0.0
             
-            elif self.inputtype == self.JOYAXISPRESSED:
+            elif self.inputtype == JOYAXISPRESSED:
                 
                 av = joy.axisValues[self.keycode]
                 
@@ -237,7 +241,7 @@ class CInputKey():
                     
                 self.prevstate = pressed
             
-            elif self.inputtype == self.JOYAXISRELEASED:
+            elif self.inputtype == JOYAXISRELEASED:
                 
                 av = joy.axisValues[self.keycode]
                 
@@ -253,7 +257,7 @@ class CInputKey():
                     
                 self.prevstate = pressed
 
-            elif self.inputtype == self.JOYAXIS:
+            elif self.inputtype == JOYAXIS:
                 
                 av = joy.axisValues[self.keycode]
 
@@ -265,7 +269,7 @@ class CInputKey():
                     
                     self.active = 0.0
 
-        if self.inputtype == self.MOUSEAXIS:
+        if self.inputtype == MOUSEAXIS:
             
             av = logic.mouse.position[self.keycode] - self.prevpos[self.keycode]
             
