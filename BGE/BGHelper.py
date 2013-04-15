@@ -1490,7 +1490,7 @@ class CGRange(object):
 
 ### INPUT CLASSES ###
 
-class CJoyStatePy(object):
+class CJoyState(object):
 
 	"""
 	
@@ -1505,8 +1505,7 @@ class CJoyStatePy(object):
 		
 		#----- EXAMPLE -----
 		
-		joysensor = cont.sensors['Joystick']	# Get the joystick sensor (there's no global variable for this yet)
-		obj['joystate'] = CJoyState(joysensor) 	# Create a CJoyState object (only needs to be done once per joystick)
+		obj['joystate'] = CJoyState(0) 		# Create a CJoyState object for the stick in the first index (only needs to be done once per joystick)
 		obj['joystate'].Poll()					# Poll the joystick sensor for joystick values (only needs to be done once per frame to get all input)
 		
 		buttonpressed = obj['joystate'].ButtonDown(1) # Check to see if a button, in this case the second one, has been pressed
@@ -1546,29 +1545,21 @@ class CJoyStatePy(object):
 	"""
 
 	def __init__(self, joyindex):
-
+	
 		self._joystick = logic.joysticks[joyindex]
 		
 		self.connected = self._joystick != None
-	
+				
 		self._index = joyindex							# Joystick index value; can be used to differentiate between joysticks
-		
-		self.numAxis = self._joystick.numAxis
-		self.numHat = self._joystick.numHats
-		self.numButton = self._joystick.numButtons
-		
+	
 		self.axismax = 1.0								# Maximum value the axis can move; usually, 32768 is the max
 		self.deadzone = 0.2								# A basic deadzone that you can use for testing axis movements
-	
-		self.axis = self._joystick.axisValues			# The axis (analog values in analog mode, digital values in digital mode)
-		
-		self.hat = self._joystick.hatValues				# The hat values for the joystick
-		self.button = self._joystick.activeButtons		# The curently active buttons for the joystick.
-		
-		self.prevAxis = None							# Previous axis, button, and hat values for the joystick (from one Poll() call ago).
-		self.prevHat = None
-		self.prevButton = None	
-		#self.prevConnected = True						# Not necessary since the joystick can only be connected before the game starts
+
+		self.axis = [0, 0]
+		self.hat = []
+		self.button = []
+
+		self.Poll()
 	
 	def Poll(self):
 		
@@ -1584,11 +1575,25 @@ class CJoyStatePy(object):
 			self.prevHat = self.hat[:]
 			self.prevButton = self.button[:]
 			
-		
 			self.axis = self._joystick.axisValues
 			self.hat = self._joystick.hatValues
-			self.button = self._joystick.activeButtons	
+			self.button = self._joystick.activeButtons
 			
+			
+		else:
+			
+			self.numAxis = 0
+			self.numHat = 0
+			self.numButton = 0
+			
+			self.axis = [0]
+			self.hat = [0]
+			self.button = [0]
+			
+			self.prevAxis = self.axis[:]
+			self.prevHat = self.hat[:]
+			self.prevButton = self.button[:]
+	
 	def getindex(self):
 		return self._index
 	def setindex(self, value):
@@ -1598,27 +1603,58 @@ class CJoyStatePy(object):
 	index = property(getindex, setindex)	# Set up the joystick index accessing property
 
 	def ButtonDown(self, button):
-		return button in self.button
+		
+		if self.connected:
+			return button in self.button
+		else:
+			return False
+		
 	def ButtonHeld(self, button):
-		return (button in self.button and button in self.prevButton)
+		if self.connected:
+			return (button in self.button and button in self.prevButton)
+		else:
+			return False
+		
 	def ButtonReleased(self, button):
-		return (button not in self.button and button in self.prevButton)
+		if self.connected:
+			return (button not in self.button and button in self.prevButton)
+		else:
+			return False
+		
 	def ButtonPressed(self, button):
-		return (button in self.button and not button in self.prevButton)
-	
+		if self.connected:
+			return (button in self.button and not button in self.prevButton)
+		else:
+			return False
+
 	def HatDown(self, hat):
 		"""
 		Tests the joystick's hat sensors to see if they're pressed down. 'hat' defines which value
 		to check for. Different joysticks have different hat setups, but for a USB PS2 controller,
 		each individual D-pad press in analog mode yields a different hat value.
 		"""
-		return hat in self.hat
+		if self.connected:
+			return hat in self.hat
+		else:
+			return False
+	
 	def HatHeld(self, hat):
-		return (hat in self.hat and hat in self.prevHat)
+		if self.connected:
+			return (hat in self.hat and hat in self.prevHat)
+		else:
+			return False
+	
 	def HatReleased(self, hat):
-		return (not hat in self.hat and hat in self.prevHat)
+		if self.connected:
+			return (not hat in self.hat and hat in self.prevHat)
+		else:
+			return False
+	
 	def HatPressed(self, hat):
-		return (hat in self.hat and not hat in self.prevHat)
+		if self.connected:
+			return (hat in self.hat and not hat in self.prevHat)
+		else:
+			return False
 		
 	def AxisDown(self, axis, dir, threshold = 0.5):
 	
@@ -1629,49 +1665,76 @@ class CJoyStatePy(object):
 		Valid directions are 1 and -1; usually, each analog stick has two axes (one for up and down, and one for left and right).
 		"""
 	
-		a = self.axis[axis]
-		if dir > 0:
-			return a > dir * threshold
-		elif dir < 0:
-			return a < dir * threshold
+		if self.connected:
+		
+			a = self.axis[axis]
+			if dir > 0:
+				return a > dir * threshold
+			elif dir < 0:
+				return a < dir * threshold
+			else:
+				return 0
+				print ("No such direction as 0")
+		
 		else:
-			return 0
-			print ("No such direction as 0")
+			
+			return False
 	
 	def AxisReleased(self, axis, dir, threshold = 0.5):
-		a = self.axis[axis]
-		pa = self.prevAxis[axis]
-		if dir > 0:
-			return a <= dir * threshold and pa > dir * threshold
-		elif dir < 0:
-			return a >= dir * threshold and pa < dir * threshold
+		
+		if self.connected:
+				
+			a = self.axis[axis]
+			pa = self.prevAxis[axis]
+			if dir > 0:
+				return a <= dir * threshold and pa > dir * threshold
+			elif dir < 0:
+				return a >= dir * threshold and pa < dir * threshold
+			else:
+				return 0
+				print ("No such direction as 0")
+		
 		else:
-			return 0
-			print ("No such direction as 0")
+			
+			return False
 	
 	def AxisPressed(self, axis, dir, threshold = 0.5):
-		a = self.axis[axis]
-		pa = self.prevAxis[axis]
-		if dir > 0:
-			return a > dir * threshold and pa <= dir * threshold
-		elif dir < 0:
-			return a < dir * threshold and pa >= dir * threshold
+		
+		if self.connected:
+				
+			a = self.axis[axis]
+			pa = self.prevAxis[axis]
+			if dir > 0:
+				return a > dir * threshold and pa <= dir * threshold
+			elif dir < 0:
+				return a < dir * threshold and pa >= dir * threshold
+			else:
+				return 0
+				print ("No such direction as 0")
+				
 		else:
-			return 0
-			print ("No such direction as 0")
+			
+			return False
 	
 	def AxisHeld(self, axis, dir, threshold = 0.5):
-		a = self.axis[axis]
-		pa = self.prevAxis[axis]
-		if dir > 0:
-			return a > dir * threshold and pa > dir * threshold
-		elif dir < 0:
-			return a < dir * threshold and pa < dir * threshold
+		
+		if self.connected:
+				
+			a = self.axis[axis]
+			pa = self.prevAxis[axis]
+			if dir > 0:
+				return a > dir * threshold and pa > dir * threshold
+			elif dir < 0:
+				return a < dir * threshold and pa < dir * threshold
+			else:
+				return 0
+				print ("No such direction as 0")
+				
 		else:
-			return 0
-			print ("No such direction as 0")
+			
+			return False
 
-class CJoyState(object):
+class CJoyStateOld(object):
 
 	"""
 	
@@ -1848,155 +1911,6 @@ class CJoyState(object):
 		else:
 			return 0
 			print ("No such direction as 0")
-
-class CJoyProfile(object):
-
-	"""
-	Class that stores profile input setups for the different joysticks. I only have a couple, but I'll add them.
-	
-	You don't have to make a CJoyProfile object to use it - it's just a container. Use it as you would use a static class in C++ -
-	refer to the class's attributes, rather than making an object to do so.
-	
-	For example:
-	
-	ps2prof = BGHelper.CJoyProfile.PS2USB
-	
-	test = obj['joystate'].ButtonDown(2) 				# Just a number
-	test = obj['joystate'].ButtonDown(ps2prof['Cross']) # The X button for a PS2 controller
-	
-	It might seem a little messy to have all values next to each other, but it's generally
-	easier than having an extra dictionary to separate them.
-	
-	"""
-			
-	PS2USB = {		
-	
-		'Triangle':0,				# BUTTONS
-		'Circle':1,
-		'Cross':2,
-		'Square':3,
-		'L2':4,
-		'R2':5,
-		'L1':6,
-		'R1':7,
-		'Select':8,
-		'Start':9,
-		'L3':10,
-		'R3':11,
-
-		'Up':1,						# Hat values
-		'Up-Right':3,
-		'Right':2,
-		'Right-Down':6,
-		'Down':4,
-		'Left-Down':12,
-		'Left':8,
-		'Left-Up':9,
-		'None':0,
-
-		'LHorizontal':0,			# Analog stick axes
-		'LVertical':1,
-		'RVertical':2,
-		'RHorizontal':3,
-
-		'AxisRight':1,				# Analog stick directions (for use with AxisDown and other Axis check functions)
-		'AxisDown':1,				# Both sticks work the same way, so you can use any of these for either stick.
-		}
-	LOGITECHCHILLSTREAM = {
-		
-		'Triangle':3,				# BUTTONS
-		'Circle':2,
-		'Cross':1,									
-		'Square':0,
-		
-		'L2':6,
-		'R2':7,
-		'L1':4,
-		'R1':5,
-		'Select':8,
-		'Start':9,
-		'L3':10,
-		'R3':11,
-		
-		'Up':1,						# Hat values
-		'Up-Right':3,
-		'Right':2,
-		'Right-Down':6,
-		'Down':4,
-		'Left-Down':12,
-		'Left':8,
-		'Left-Up':9,
-		'None':0,
-		
-		'LHorizontal':0,			# Analog stick axes
-		'LVertical':1,
-		'RHorizontal':2,
-		'RVertical':3,
-				
-		'AxisRight':1,				# Analog stick directions (for use with AxisDown and other Axis check functions)
-		'AxisDown':1,				# Both sticks work the same way, so you can use any of these for either stick.
-		
-		}
-	
-	"""
-	--------------
-	XBOX 360 NOTES
-	--------------
-	
-	Note that the triggers are implemented as a single axis; the controls don't seem to add up correctly (i.e.
-	LT = axis 2 < 0, RT = axis 2 > 0; added together, they approach 0...). There's no alternative way to tell
-	which axis is being pressed, either. :1
-	
-	Note that this should be the profile used for X-Input controllers, even if they aren't XBOX 360 controllers,
-	like the Logitech F310.		
-	"""
-		
-	XBOX360 = {
-		
-		"A":0,					# Buttons and aliases
-		"Cross":0,
-		
-		"B":1,
-		"Circle":1,
-		
-		"X":2,
-		"Square":2,
-		
-		"Y":3,
-		"Triangle":3,
-		
-		"LB":4,
-		"L1":4,
-		
-		"RB":5,
-		"R1":5,
-		
-		"Back":6,
-		"Select":6,
-		
-		"Start":7,
-		
-		"L3":8,
-		"R3":9,
-		
-		"Up":1,					# Hat (D-Pad)
-		"Up-Right":3,
-		"Right":2,
-		"Right-Down":6,
-		"Down":4,
-		"Down-Left":12,
-		"Left":8,
-		"Left-Up":9,
-		
-		"LHorizontal":0,		# Axes
-		"LVertical":1,
-		"RHorizontal":4,
-		"RVertical":3,
-		"Triggers":5,
-		
-		"AxisRight":1,			# Axis directions
-		"AxisDown":1,
-	}
 
 class CTimer(object):
 	
@@ -2452,6 +2366,10 @@ def GetObject(object, owner = None, scene = None):
 	"""
 	Gets the object named from the sce.objects list. It also stores the object reference, so if you call the function
 	again, it will grab the reference from the dictionary, rather than searching the list again.
+	
+	object = the name of the object to look for in the scene
+	owner = the object to store the object reference from
+	scene = the scene to check for the object named
 	"""
 
 	if scene == None:
@@ -3827,6 +3745,8 @@ def Near(objpos = None, prop = '', mindist = 0, maxdist = 9999999, sort = 0, che
 		#else:
 	
 		returnlist.sort(key = lambda sortkey : sortkey[1])	# If sort is set to 1 (and onlyobj is not set to 1), it sorts the list, using as a key the distance values to the object
+	
+		#returnlist = sorted(returnlist, key=)
 	
 	if len(returnlist) <= 0:
 		returnlist = [[None, None]]
