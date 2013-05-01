@@ -432,20 +432,20 @@ def SpriteMesh(spriteobj = None):
 
 		anim = obj['spranim']
 		
-		if anim != None:
-			
+		if anim != None and len(anim) > 1:
+		
 			obj['sprpastsubimage'] = obj['sprsubimage']
 			
 			if obj['sprfps'] != 0.0:	# If spritefps == 0, don't advance the subimage
 				obj['sprsubimage'] += round(sprfps, 2) * frequency	# GameLogic's logic tic rate is constant, but if FPS drops below the tic rate, the animations will adjust
 
-			if math.floor(obj['sprsubimage']) > len(anim) - 1:
+			if math.floor(obj['sprsubimage']) > len(anim) - 1:				
 				if obj['sprfps'] > 0:
 					while obj['sprsubimage'] > (len(anim) - 1):
 						obj['sprsubimage'] -= (len(anim) - 1)
 				else:
 					obj['sprsubimage'] = 1.0	
-
+			
 			elif math.floor(obj['sprsubimage']) < 1.0:	# Hack that makes sure the subimage is never looking at the animation column for a frame
 				if obj['sprfps'] > 0:
 					obj['sprsubimage'] = 1.0		# Shouldn't really ever happen that the subimage is going up, but somehow goes below 0; if it does, just set it to a healthy 1.

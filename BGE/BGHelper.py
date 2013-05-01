@@ -1544,7 +1544,7 @@ class CJoyState(object):
 	
 	"""
 
-	def __init__(self, joyindex):
+	def __init__(self, joyindex = 0):
 	
 		self._joystick = logic.joysticks[joyindex]
 		
