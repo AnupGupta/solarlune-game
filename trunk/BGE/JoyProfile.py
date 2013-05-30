@@ -92,7 +92,7 @@ XBOX 360 NOTES
 --------------
 
 Note that the triggers are implemented as a single axis; the controls don't seem to add up correctly (i.e.
-LT = axis 2 < 0, RT = axis 2 > 0; added together, they approach 0...). There's no alternative way to tell
+LT = axis 5 < 0, RT = axis 5 > 0; added together, they approach 0...). There's no alternative way to tell
 which axis is being pressed, either. :1
 
 Note that this should be the profile used for X-Input controllers, even if they aren't XBOX 360 controllers,

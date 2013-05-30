@@ -3271,6 +3271,16 @@ def TrackTo(dest, obj = None, axis = 'y', time = 0, dimensions = "xyz"):
 	else:
 		obj.alignAxisToVect(vect[1], axis)
 
+def GetScene(scenename):
+	
+	for s in logic.getSceneList():
+		
+		if s.name == scenename:
+			
+			return s
+		
+	return None
+
 ### Image Handling Functions ###
 
 def GetColor(x, y, array, size, comp = 4, wrap = 0):
@@ -3758,6 +3768,15 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 	"""
 	Casts several rays in a line, starting from frompos and going to topos, and then iterating along the line indicated by anglevect.
 	
+	The function returns a list, consisting of three items:
+	
+	1) The return of the raycasts (either a hit, or an empty list, depending on what the rays hit)
+	2) The ending position of the last successful raycast, or None if there wasn't a successful raycast
+	3) The starting position of the last successful raycast, or None if there wasn't a successful raycast
+	4) The offset between the starting point of the successful ray cast and the provided starting ray cast position. Useful in case
+	you want to reorient the position of an object from the ray cast (i.e. move to contact point), but still want to use the object's
+	center position (don't move to where the ray hit, but move to where it hit relative to the object's center position).
+	
 	anglevect = The angle that the rays should be cast on.
 	
 	anglewidth = How wide the rays should be cast in Blender Units (i.e. a value of 1 means that from the left-most ray to the right-most ray is 1 BU).
@@ -3782,12 +3801,9 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 	the function.
 	
 	objdebug = default None; an object to use for debugging
-	
-	The function returns a list, consisting of three items:
-	- The return of the raycasts (either a hit, or an empty list, depending on what the rays hit)
-	- The ending position of the last successful raycast, or None if there wasn't a successful raycast
-	- The starting position of the last successful raycast, or None if there wasn't a successful raycast
-	
+
+	-----
+
 	Okay, so now what is this actually used for? Mainly, to do kind of a 'ray cast wall'. An example would be if you
 	want to cast multiple rays for a character in a platforming game. You would do this instead of using the built-in Bullet
 	physics engine to handle gravity and collisions so that you could have partially impassable objects, for example.
@@ -3871,14 +3887,14 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 				db.color = [1, 0, 0, 1]
 								
 		if ray[0] != None:
-			return [ray, rtp, rfp]
+			return [ray, rtp, rfp, rfp - frompos]
 		
 		av = anglevect / rn
 		
 		rtp += av
 		rfp += av
 							
-	return [ray, None, None]
+	return [ray, None, None, None]
 		
 def RayCastList(topos, frompos, prop = None, face = 0, xray = 1):
 	""" Uses a series of raycasts to find all objects that collide on a specific ray; an example would be
