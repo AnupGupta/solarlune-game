@@ -317,6 +317,19 @@ class CInputDevice():
         
     def __init__(self):
         
+        """
+        Example code usage:
+        
+        device = CInputDevice()
+        
+        device.Add('jump', BGInput.KEYPRESSED, events.ZKEY, 'keyboard')
+        
+        device.Poll('keyboard')
+        
+        print (device.bindings['jump'])
+        
+        """
+        
         self.events = {}
         self.bindings = {}
         

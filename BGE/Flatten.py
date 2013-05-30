@@ -107,7 +107,12 @@ def Flatten(destination, sources):
 				
 				op = sources[objindex].worldPosition
 					
-				vert.XYZ = tv.XYZ + (op - lp)		# Set each vertex of the source mesh to match one of the target objects'
+				vert.XYZ = tv.XYZ
+				vert.x *= targetobj.worldScale.x
+				vert.y *= targetobj.worldScale.y
+				vert.z *= targetobj.worldScale.z
+
+				vert.XYZ += (op - lp)		# Set each vertex of the source mesh to match one of the target objects'
 				vert.UV = tv.UV						# Mesh vertex position, UV, and normal properties, offset by the target
 				vert.normal = tv.normal				# objects' world positions and the local mesh's world position (because all
 				vert.color = tv.color					# of the vertices belong to the local mesh
