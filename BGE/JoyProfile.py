@@ -7,7 +7,7 @@ refer to the class's attributes, rather than making an object to do so.
 
 For example:
 
-ps2prof = BGHelper.CJoyProfile.PS2USB
+ps2prof = JoyProfile.PS2USB
 
 test = obj['joystate'].ButtonDown(2) 				# Just a number
 test = obj['joystate'].ButtonDown(ps2prof['Cross']) # The X button for a PS2 controller
@@ -16,7 +16,43 @@ It might seem a little messy to have all values next to each other, but it's gen
 easier than having an extra dictionary to separate them.
 
 """
-		
+
+GCUSB = {		
+
+	'A':1,						# BUTTONS
+	'B':2,
+	'X':0,
+	'Y':3,
+	'L':4,
+	'R':5,
+	'Z':7,
+	'Start':9,
+	
+	'D-Pad-Up':12,					# D-pad registers as button and a POV hat
+	'D-Pad-Right':13,
+	'D-Pad-Down':14,
+	'D-Pad-Left':15,
+
+	'Pov-Up':1,					# Hat values
+	'Pov-Up-Right':3,
+	'Pov-Right':2,
+	'Pov-Right-Down':6,
+	'Pov-Down':4,
+	'Pov-Left-Down':12,
+	'Pov-Left':8,
+	'Pov-Left-Up':9,
+	'Pov-None':0,
+
+	'LHorizontal':0,			# Analog stick axes
+	'LVertical':1,
+	'RVertical':2,
+	'RHorizontal':3,
+	'RTrigger':4,
+	'LTrigger':5,
+
+	'AxisRight':1,				# Analog stick directions (for use with AxisDown and other Axis check functions)
+	'AxisDown':1,				# Both sticks work the same way, so you can use any of these for either stick.
+	}
 PS2USB = {		
 
 	'Triangle':0,				# BUTTONS
@@ -32,15 +68,15 @@ PS2USB = {
 	'L3':10,
 	'R3':11,
 
-	'Up':1,						# Hat values
-	'Up-Right':3,
-	'Right':2,
-	'Right-Down':6,
-	'Down':4,
-	'Left-Down':12,
-	'Left':8,
-	'Left-Up':9,
-	'None':0,
+	'Pov-Up':1,						# Hat values
+	'Pov-Up-Right':3,
+	'Pov-Right':2,
+	'Pov-Right-Down':6,
+	'Pov-Down':4,
+	'Pov-Left-Down':12,
+	'Pov-Left':8,
+	'Pov-Left-Up':9,
+	'Pov-None':0,
 
 	'LHorizontal':0,			# Analog stick axes
 	'LVertical':1,
@@ -66,15 +102,15 @@ LOGITECHCHILLSTREAM = {
 	'L3':10,
 	'R3':11,
 	
-	'Up':1,						# Hat values
-	'Up-Right':3,
-	'Right':2,
-	'Right-Down':6,
-	'Down':4,
-	'Left-Down':12,
-	'Left':8,
-	'Left-Up':9,
-	'None':0,
+	'Pov-Up':1,						# Hat values
+	'Pov-Up-Right':3,
+	'Pov-Right':2,
+	'Pov-Right-Down':6,
+	'Pov-Down':4,
+	'Pov-Left-Down':12,
+	'Pov-Left':8,
+	'Pov-Left-Up':9,
+	'Pov-None':0,
 	
 	'LHorizontal':0,			# Analog stick axes
 	'LVertical':1,
@@ -102,26 +138,14 @@ like the Logitech F310.
 XBOX360 = {
 	
 	"A":0,					# Buttons and aliases
-	"Cross":0,
-	
 	"B":1,
-	"Circle":1,
-	
 	"X":2,
-	"Square":2,
-	
 	"Y":3,
-	"Triangle":3,
 	
 	"LB":4,
-	"L1":4,
-	
 	"RB":5,
-	"R1":5,
 	
 	"Back":6,
-	"Select":6,
-	
 	"Start":7,
 	
 	"L3":8,

@@ -2609,7 +2609,9 @@ def Scale(amount, obj = None):
 	
 ### GAME FUNCTIONS ###	
 
-def MouseLook(obj = None, lockrot = 0, turnspd = 1.0, speedadd = 0, friction = 0.9, upcap = 1.4, downcap = -1.4, min = 0.002, macfix = 1, yinvert = 0, xinvert = 0, analog = None, analogdeadzone = 0.0):
+def MouseLook(obj = None, lockrot = 0, turnspd = 1.0, tiltspd = 1.0, speedadd = 0, friction = 0.9, upcap = 1.4,
+			  downcap = -1.4, min = 0.002, macfix = 1, yinvert = 0, xinvert = 0, analog = None,
+			  analogdeadzone = 0.0, joymax = 1.0):
 	"""
 	A generic mouse look script for Blender 2.5. Useful, as all you need to do is run the function
 	every frame to have working mouse-look for the selected object.
@@ -2619,7 +2621,8 @@ def MouseLook(obj = None, lockrot = 0, turnspd = 1.0, speedadd = 0, friction = 0
 	
 	lockrot = whether or not to lock rotation for a certain axis; 0 = none, 1 = X-axis rotation locked (up and down), 2 = Z-axis rotation locked (turning)
 	
-	turnspd = how sensitive the mouse is
+	turnspd = the maximum speed the camera (object) will turn
+	tiltspd = the maximum speed the camera (object) can tilt up and down (if you wanted it to be different)
 	friction = how quickly the mouse slows down when using speed
 	
 	upcap = how far upwards the mouse can aim
@@ -2629,8 +2632,9 @@ def MouseLook(obj = None, lockrot = 0, turnspd = 1.0, speedadd = 0, friction = 0
 	when necessary
 	speedadd = if the mouse-look should be speed-based (a smoother mouse-look)
 	
-	values = You can also set analog to the X and Y values of an analog stick, if you want to use it instead of the mouse.
-	This assumes that the default 32768 values are the maximum.
+	analog = You can also set analog to the X and Y values of an analog stick, if you want to use it instead of the mouse.
+	joymax = Maximum reach of the joystick; 32768 is the default for the sensor, I think, while the Python
+	joystick actually is automatically normalized to 1.0
 	
 	~~~~~~~~~~~~~BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG BUG~~~~~~
 	
@@ -2648,7 +2652,7 @@ def MouseLook(obj = None, lockrot = 0, turnspd = 1.0, speedadd = 0, friction = 0
 	win_w = render.getWindowWidth()
 	win_h = render.getWindowHeight()
 	
-	joymax = 1.0
+	joymax = joymax
 	
 	#render.setMousePosition(int(win_w / 2), int(win_h / 2))	# Center mouse; SHOULD ONLY BE DONE IF THE MOUSE GETS UNWIELDY
 
@@ -2692,9 +2696,9 @@ def MouseLook(obj = None, lockrot = 0, turnspd = 1.0, speedadd = 0, friction = 0
 				if abs(analog[1]) > analogdeadzone:
 				
 					if yinvert:
-						obj['mousevel'].y -= analog[1] / joymax * (turnspd * 0.1)
+						obj['mousevel'].y -= analog[1] / joymax * (tiltspd * 0.1)
 					else:
-						obj['mousevel'].y += analog[1] / joymax * (turnspd * 0.1)
+						obj['mousevel'].y += analog[1] / joymax * (tiltspd * 0.1)
 					
 			else:
 				

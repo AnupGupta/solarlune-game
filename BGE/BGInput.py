@@ -339,11 +339,18 @@ class CInputDevice():
         Add a key binding.
         
         bindingname = name of the binding to create (i.e. 'left', 'jump', 'run', 'interact'...)
+        inputtype = input type from CInputKey (CInputKey.KEYDOWN, for example)
+        keycode = key, axis, hat, or button code for the input device (for example, events.XKEY, 5 for the fifth button on a joystick, etc.)
         
         group = a string that designates what group to add this binding to. For example, you might add all of the joystick
-        bindings to a 'joystick' group, and all of the keyboard bindings to a 'keyboard' group.
+        bindings to a 'joystick' group, and all of the keyboard bindings to a 'keyboard' group
         
-        The other arguments are just passed to the CInputKey class instance.
+        axisdir = direction to check for axis values for joystick and mouse axis checks.
+        deadzone = Fraction to disregard joystick movement.
+        joyindex = joystick index to check.
+        scalar = how large the end number is. Defaults to 1.0. This is useful to make corresponding inputs match up (i.e. make
+        the mouse move at the same rate as the right analog stick).
+        
         """
         
         if not group in self.events:
@@ -362,21 +369,42 @@ class CInputDevice():
         
         self.events[group][bindingname].append(CInputKey(inputtype, keycode, axisdir, deadzone, joyindex, scalar))
         
-    def Poll(self, group = "default"):
+    def Poll(self, group = None):
         
         """
         Poll the bindings for updates.
+        
+        group = which set of bindings to poll in particular. If left to None, then it will poll all groups.
+        If you specify, then it will poll those in particular. Useful for switching input schemes.
         """
         
-        for binding in self.events[group]:
-     
-            self.bindings[binding] = 0
+        if group == None:
             
-            for input in self.events[group][binding]:
+            for group in self.events:
                 
-                input.Poll()
-               
-                if input.active:
-              
-                    self.bindings[binding] = input.active
+                for binding in self.events[group]:
+         
+                    self.bindings[binding] = 0
+                    
+                    for input in self.events[group][binding]:
+                        
+                        input.Poll()
+                       
+                        if input.active:
+                      
+                            self.bindings[binding] = input.active
+            
+        else:
+            
+            for binding in self.events[group]:
+         
+                self.bindings[binding] = 0
+                
+                for input in self.events[group][binding]:
+                    
+                    input.Poll()
+                   
+                    if input.active:
+                  
+                        self.bindings[binding] = input.active
       
