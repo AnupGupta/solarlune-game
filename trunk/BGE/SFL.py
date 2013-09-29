@@ -1470,7 +1470,7 @@ def Harsh():
 		// more difficult to deal with - customizing the bit filters is easy.
 		
 		uniform sampler2D bgl_RenderedTexture;
-
+		
 		void main(void)
 		{
 			vec4 color;
@@ -1880,11 +1880,11 @@ def EdgeDetect(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1]):
 			gl_FragColor = center;
 	}
 		"""	)
-		
-def Pixellate(cellw = 4.0, cellh = 4.0):
+
+def Pixellate(pixel_w = 4.0, pixel_h = 4.0):
 
 	""" 
-	Pixelation filter.
+	Pixelation filter, adapted from a script from Geexlab / Geeks3D.com.
 	
 	Author: SolarLune
 	Date Updated: 6/6/11
@@ -1894,12 +1894,12 @@ def Pixellate(cellw = 4.0, cellh = 4.0):
 	every frame as that will kill your FPS. It's better to copy the script you want and pass a uniform variable 
 	if you want to alter parameters while running the filter)
 	
-	cellx = cell-size on the X-Axis
-	celly = cell-size on the Y-Axis
+	pixel_w = pixel-size on the X-Axis
+	pixel_h = pixel-size on the Y-Axis
 	
 	Higher numbers equals a blockier picture
 	"""
-	winsize = [render.getWindowWidth(), render.getWindowHeight()]	
+	#winsize = [render.getWindowWidth(), render.getWindowHeight()]	
 	
 	return ("""
 	// Name: Pixellate
@@ -1910,31 +1910,25 @@ def Pixellate(cellw = 4.0, cellh = 4.0):
 	// X-axis and celly size on the Y-axis.
 	
 	uniform sampler2D bgl_RenderedTexture;
-
-	float Round(float value){	// Rounds off the specified number
-	
-		if (ceil(value) - value < 0.5)
-			return ceil(value);
-		else
-			return floor(value);
-	
-	}
+	uniform float bgl_RenderedTextureWidth;
+	uniform float bgl_RenderedTextureHeight;
 	
 	void main(void)
 	{
 		vec2 uv = gl_TexCoord[0].xy;
 			
-			float dx = """ + str(float(cellw)) + """ * (1.0 / """ + str(float(winsize[0])) +  """);
-			float dy = """ + str(float(cellh)) + """ * (1.0 / """ + str(float(winsize[1])) +  """);
-			
-			vec2 coord = vec2(dx * Round(uv.x / dx), dy * Round(uv.y / dy));
-			
-			coord.x = min(max(0.0, coord.x), 1.0);
-			coord.y = min(max(0.0, coord.y), 1.0);
-			
-			gl_FragColor = vec4(texture2D(bgl_RenderedTexture, coord));
+		float dx = """ + str(pixel_w) + """ * (1.0 / bgl_RenderedTextureWidth);
+		float dy = """ + str(pixel_h) + """ * (1.0 / bgl_RenderedTextureHeight);
+		
+		vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));
+		
+		coord.x = min(max(0.001, coord.x), 1.0);
+		coord.y = min(max(0.001, coord.y), 1.0);
+		
+		gl_FragColor = texture2D(bgl_RenderedTexture, coord);
 	}
 	""")
+
 	
 def RadialBlur(percentage = 1.0, minimum = 1.0):
 	""" 
