@@ -20,28 +20,48 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 P.S. It would be nice if you could attribute me for the creation of this and my other scripts. Thanks!
 """
 
-KEYDOWN = 0
-KEYUP = 1
-KEYPRESSED = 2
-KEYRELEASED = 3
+"""
+Change-log:
 
-JOYBUTTONDOWN = 4
-JOYBUTTONUP = 5
-JOYBUTTONPRESSED = 6
-JOYBUTTONRELEASED = 7
+10/2/13: Updated input methods to drop the need to use states for each individual binding
+(i.e. JumpPressed and JumpDown). Now you just specify the type of binding it is when you add it (KEY for keyboard,
+JOYBUTTON for joystick button, etc.), and then use the input device itself to check the state. There are three
+functions for this process now - BindDown, BindPressed, and BindReleased. Each function will return the state of the
+binding should the state you specify be true (i.e. if the input is being held, then it will return the value of that
+input. For a key or a button, it would be 1.0 or 0. For an axis, it would be a number indicating how far that axis
+is being pressed).
 
-JOYHATDOWN = 8
-JOYHATUP = 9
-JOYHATPRESSED = 10
-JOYHATRELEASED = 11
+Check the BGInput example to see how it works.
+"""
 
-JOYAXIS = 12                # Return the percentage that the axis is being pressed (the axis values themselves)
-JOYAXISDOWN = 13        # Otherwise, return 0 or 1 values
-JOYAXISUP = 14
-JOYAXISPRESSED = 15
-JOYAXISRELEASED = 16
+KEY = 0
+#KEYUP = 1
+#KEYPRESSED = 2
+#KEYRELEASED = 3
+
+JOYBUTTON = 1
+#JOYBUTTONUP = 5
+#JOYBUTTONPRESSED = 6
+#JOYBUTTONRELEASED = 7
+
+JOYHAT = 2
+#JOYHATUP = 9
+#JOYHATPRESSED = 10
+#JOYHATRELEASED = 11
+
+JOYAXIS = 3                # Return the percentage that the axis is being pressed (the axis values themselves)
+#JOYAXISPERCENT = 4
+#JOYAXISDOWN = 13        # Otherwise, return 0 or 1 values
+#JOYAXISUP = 14
+#JOYAXISPRESSED = 15
+#JOYAXISRELEASED = 16
 
 MOUSEAXIS = 17
+
+STATE_UP = 0
+STATE_DOWN = 1
+STATE_PRESSED = 2
+STATE_RELEASED = 3
 
 class CInputKey():
     
@@ -69,6 +89,7 @@ class CInputKey():
         self.prevstate = 0
         self.prevpos = [0, 0]                       # Previous position of the mouse
         self.active = 0.0
+        self.state = STATE_UP                       # The state of the key input (just pressed, released, down, up, etc.)
         
         self.scalar = scalar
         self.axisdirection = axisdirection      # Default for axis checking
@@ -83,121 +104,93 @@ class CInputKey():
         
         joy = logic.joysticks[self.joyindex]
     
-        if self.inputtype == KEYDOWN:
+        if self.inputtype == KEY:
             
-            if logic.keyboard.events[self.keycode] == logic.KX_INPUT_ACTIVE:    self.active = self.scalar
+            if logic.keyboard.events[self.keycode] == logic.KX_INPUT_ACTIVE:
                 
-            else:   self.active = 0
-            
-        elif self.inputtype == KEYUP:
-            
-            if not logic.keyboard.events[self.keycode] == logic.KX_INPUT_ACTIVE: self.active = self.scalar
-            
-            else:   self.active = 0
-            
-        elif self.inputtype == KEYPRESSED:
-            
-            if logic.keyboard.events[self.keycode] == logic.KX_INPUT_JUST_ACTIVATED: self.active = self.scalar
-            
-            else:   self.active = 0
-            
-        elif self.inputtype == KEYRELEASED:
-            
-            if logic.keyboard.events[self.keycode] == logic.KX_INPUT_JUST_RELEASED: self.active = self.scalar
-            
-            else:   self.active = 0
-          
+                self.active = self.scalar
+                
+                if self.prevstate == 0:
+                    
+                    self.state = STATE_PRESSED
+                    
+                else:
+                    
+                    self.state = STATE_DOWN
+                
+            else:
+                
+                self.active = 0
+                
+                if self.prevstate == 1:
+                    
+                    self.state = STATE_RELEASED
+                
+                else:
+                    
+                    self.state = STATE_UP
+                        
+            self.prevstate = self.state
+
         if joy != None:
                         
-            if self.inputtype == JOYBUTTONDOWN:
+            if self.inputtype == JOYBUTTON:
          
                 if self.keycode in joy.activeButtons:
                 
                     self.active = self.scalar
                     
+                    if self.prevstate == 0:
+                        
+                        self.state = STATE_PRESSED
+                        
+                    else:
+                        
+                        self.state = STATE_DOWN
+                                            
                 else:
                     
                     self.active = 0
-
-            elif self.inputtype == JOYBUTTONUP:
-                
-                if not self.keycode in joy.activeButtons:
-                
-                    self.active = self.scalar
                     
-                else:
+                    if self.prevstate == 1:
+                        
+                        self.state = STATE_RELEASED
                     
-                    self.active = 0
+                    else:
+                        
+                        self.state == STATE_UP
                
-            elif self.inputtype == JOYBUTTONPRESSED:
-                  
-                if self.keycode in joy.activeButtons and self.prevstate == 0:
-                   
-                   self.active = self.scalar
-                   
-                else:
-                    
-                    self.active = 0
-                    
-                self.prevstate = self.keycode in joy.activeButtons
-                    
-            elif self.inputtype == JOYBUTTONRELEASED:
-
-                if not self.keycode in joy.activeButtons and self.prevstate == 1:
-                   
-                   self.active = self.scalar
-                   
-                else:
-                    
-                    self.active = 0
-                    
-                self.prevstate = self.keycode in joy.activeButtons
-                
-            elif self.inputtype == JOYHATDOWN:
-                
+                self.prevstate = self.state
+            
+            elif self.inputtype == JOYHAT:
+         
                 if self.keycode in joy.hatValues:
                 
                     self.active = self.scalar
                     
+                    if self.prevstate == 0:
+                        
+                        self.state = STATE_PRESSED
+                        
+                    else:
+                        
+                        self.state = STATE_DOWN
+                                            
                 else:
                     
                     self.active = 0
                     
-            elif self.inputtype == JOYHATUP:
+                    if self.prevstate == 1:
+                        
+                        self.state = STATE_RELEASED
+                    
+                    else:
+                        
+                        self.state == STATE_UP
+               
+                self.prevstate = self.state
             
-                if not self.keycode in joy.hatValues:
-                
-                    self.active = self.scalar
-                    
-                else:
-                    
-                    self.active = 0
-                    
-            elif self.inputtype == JOYHATPRESSED:
-                
-                if self.keycode in joy.hatValues and self.prevstate == 0:
-                   
-                   self.active = self.scalar
-                   
-                else:
-                    
-                    self.active = 0
-                    
-                self.prevstate = self.keycode in joy.hatValues
-
-            elif self.inputtype == JOYHATRELEASED:
-                
-                if not self.keycode in joy.hatValues and self.prevstate == 1:
-                   
-                   self.active = self.scalar
-                   
-                else:
-                    
-                    self.active = 0
-                    
-                self.prevstate = self.keycode in joy.hatValues
-            
-            elif self.inputtype == JOYAXISDOWN:
+            elif self.inputtype == JOYAXIS:
                 
                 av = joy.axisValues[self.keycode]
                 
@@ -205,73 +198,47 @@ class CInputKey():
                 
                 if pressed:
                     
-                    self.active = self.scalar
-                    
-                else:
-                    
-                    self.active = 0.0
-            
-            elif self.inputtype == JOYAXISUP:
-                
-                av = joy.axisValues[self.keycode]
-                
-                pressed = abs(av) > self.deadzone and math.copysign(1, av) == self.axisdirection
-                
-                if not pressed:
-                    
-                    self.active = self.scalar
-                    
-                else:
-                    
-                    self.active = 0.0
-            
-            elif self.inputtype == JOYAXISPRESSED:
-                
-                av = joy.axisValues[self.keycode]
-                
-                pressed = abs(av) >= self.deadzone and math.copysign(1, av) == self.axisdirection
-                
-                if pressed and self.prevstate == 0:
-                    
-                    self.active = self.scalar
-                    
-                else:
-                    
-                    self.active = 0.0
-                    
-                self.prevstate = pressed
-            
-            elif self.inputtype == JOYAXISRELEASED:
-                
-                av = joy.axisValues[self.keycode]
-                
-                pressed = abs(av) >= self.deadzone and math.copysign(1, av) == self.axisdirection
-                
-                if not pressed and self.prevstate == 1:
-                    
-                    self.active = self.scalar
-                    
-                else:
-                    
-                    self.active = 0.0
-                    
-                self.prevstate = pressed
-
-            elif self.inputtype == JOYAXIS:
-                
-                av = joy.axisValues[self.keycode]
-
-                if abs(av) > self.deadzone and math.copysign(1, av) == self.axisdirection:
-                    
                     self.active = abs(av) * self.scalar
                     
+                    if self.prevstate == 0:
+                        
+                        self.state = STATE_PRESSED
+                        
+                    else:
+                        
+                        self.state = STATE_DOWN
+                    
                 else:
                     
                     self.active = 0.0
+                    
+                    if self.prevstate == 1:
+                        
+                        self.state = STATE_RELEASED
+                        
+                    else:
+                        
+                        self.state = STATE_UP
+                    
+                self.prevstate = pressed
 
-        if self.inputtype == MOUSEAXIS:
+            #elif self.inputtype == JOYAXISPERCENT:
+            #    
+            #    av = joy.axisValues[self.keycode]
+            #
+            #    if abs(av) > self.deadzone and math.copysign(1, av) == self.axisdirection:
+            #        
+            #        self.active = abs(av) * self.scalar
+            #        
+            #    else:
+            #        
+            #        self.active = 0.0
+
+        elif self.inputtype == MOUSEAXIS:
             
             av = logic.mouse.position[self.keycode] - self.prevpos[self.keycode]
+            
+            self.state = STATE_DOWN
             
             if math.copysign(1, av) == self.axisdirection and abs(av) > 0.001:
             
@@ -332,6 +299,7 @@ class CInputDevice():
         
         self.events = {}
         self.bindings = {}
+        self.states = {} # The states of individual bindings (seemed easier than having to use bindings['active'] and bindings['state'])
         
     def Add(self, bindingname, inputtype, keycode, group = "default", axisdir = 1, deadzone = 0.1, joyindex = 0, scalar = 1.0):
         
@@ -374,31 +342,23 @@ class CInputDevice():
         """
         Poll the bindings for updates.
         
-        group = which set of bindings to poll in particular. If left to None, then it will poll all groups.
-        If you specify, then it will poll those in particular. Useful for switching input schemes.
+        group = which set of bindings to poll in particular. If left to None, then it will poll all groups specified.
+        If you specify, then it will poll that one in particular. Useful for switching input schemes.
         """
         
         if group == None:
             
-            for group in self.events:
-                
-                for binding in self.events[group]:
-         
-                    self.bindings[binding] = 0
-                    
-                    for input in self.events[group][binding]:
-                        
-                        input.Poll()
-                       
-                        if input.active:
-                      
-                            self.bindings[binding] = input.active
+            poll_groups = [gr for gr in self.events]
             
         else:
             
+            poll_groups = [group]
+            
+        for group in poll_groups:
+    
             for binding in self.events[group]:
          
-                self.bindings[binding] = 0
+                self.bindings[binding] = {'active':0, 'state':0}
                 
                 for input in self.events[group][binding]:
                     
@@ -406,5 +366,33 @@ class CInputDevice():
                    
                     if input.active:
                   
-                        self.bindings[binding] = input.active
-      
+                        self.bindings[binding] = {'active':input.active, 'state':input.state}
+                        
+                    elif not self.bindings[binding]['active'] and input.state != STATE_UP:
+                        
+                        self.bindings[binding]['state'] = input.state
+    
+    def BindDown(self, bind):
+        """
+        Checks to see if the binding you specify is activated currently (down).
+        
+        bind = binding name
+        """
+        return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_DOWN else 0
+    def BindPressed(self, bind):
+        """
+        Checks to see if the binding you specify was just pressed this frame.
+        
+        bind = binding name
+        """
+        return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_PRESSED else 0
+    def BindReleased(self, bind):
+        """
+        Checks to see if the binding you specify was just released this frame. If it was, 1 is returned.
+        
+        bind = binding name
+        """
+        return 1 if self.bindings[bind]['state'] == STATE_RELEASED else 0
+    
+    
+    
