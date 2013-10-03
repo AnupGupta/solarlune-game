@@ -311,7 +311,7 @@ def Scanlines(scandarkness = 0.0, scanwidth = 1.0, pixelcount = 4.0, samplesize 
 	
 	return (scan)
 
-def Bloom(strength = 1.0, width = 1.0, quality = 0):
+def BloomOld(strength = 1.0, width = 1.0, quality = 0):
 	
 	"""
 	Bloom filter. 
@@ -582,9 +582,9 @@ def Bloom(strength = 1.0, width = 1.0, quality = 0):
 	else:
 		return (bloomhigh)
 
-def ForBloom(strength = 1.0, width = 1.0, numberofsamples = 4):
+def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_num_y = 4):
 	
-	forbloom = """
+	bloom = """
 					
 		uniform sampler2D bgl_RenderedTexture;
 
@@ -597,32 +597,34 @@ def ForBloom(strength = 1.0, width = 1.0, numberofsamples = 4):
 			vec4 center = texture2D(bgl_RenderedTexture, texcoord);
 			
 			float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
+			float height = 0.002 * """ + str(float(height)) + """;  // height = how tall of a sample to use
 			
-			int numberofsamples = """ + str(int(numberofsamples)) + """;
+			int sample_num_x = """ + str(int(sample_num_x)) + """;
+			int sample_num_y = """ + str(int(sample_num_y)) + """;
 			
-			for (int i = -numberofsamples; i < numberofsamples; i++)
+			for (int i = -sample_num_x; i < sample_num_x; i++)
 			{
-				for (int j = -numberofsamples; j < numberofsamples; j++)
+				for (int j = -sample_num_y; j < sample_num_y; j++)
 				{
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i, j)*width));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i * width, j * height)));
 				}
 			}
 			
-			sum /= ((numberofsamples * 2) * (numberofsamples * 2));
+			sum /= ((sample_num_x * 2) * (sample_num_y * 2));
 				
-			float brightness = (max(sum.r, max(sum.g, sum.b)) + min(sum.r, min(sum.g, sum.b))) / 2.0;	// Luminance
+			//float brightness = (max(sum.r, max(sum.g, sum.b)) + min(sum.r, min(sum.g, sum.b))) / 2.0;	// Luminance
 				
 			vec4 bloom = sum * (""" + str(float(strength)) + """);
 			
 			bloom.a = 1.0;
 			
-			gl_FragColor = center + (bloom * brightness);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
+			gl_FragColor = center + (bloom);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
 		}
 	"""
 	
-	return (forbloom)
+	return (bloom)
 	
-def BloomCross(strength = 1.0, width = 1.0, shape = 0, quality = 0):
+def BloomCrossOld(strength = 1.0, width = 1.0, shape = 0, quality = 0):
 	
 	"""
 	Cross-shaped Bloom filter. Derived from Bloom, which is adapted from Blender Foundation's Bloom filter
@@ -1108,7 +1110,7 @@ def BloomCross(strength = 1.0, width = 1.0, shape = 0, quality = 0):
 	else:
 		return bchigh	
 
-def ForBloomCross(strength = 1.0, width = 1.0, shape = 0, numberofsamples = 4):
+def BloomCross(strength = 1.0, width = 1.0, height = 1.0, shape = 0, sample_num = 4):
 	
 	forbloom = """
 					
@@ -1123,19 +1125,20 @@ def ForBloomCross(strength = 1.0, width = 1.0, shape = 0, numberofsamples = 4):
 			
 			vec4 center = texture2D(bgl_RenderedTexture, texcoord);
 			
-			float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
+			float width = 0.002 * """ + str(float(width)) + """;	// width = how wide the sample distance is
+			float height = 0.002 * """ + str(float(height)) + """;	// height = how high the sample distance is
 			
-			int numberofsamples = """ + str(int(numberofsamples)) + """;
+			int sample_num = """ + str(int(sample_num)) + """;
 			
 			if ((shape == 0) || (shape == 2))
 			{
 			
-				for (int i = -numberofsamples; i < numberofsamples; i += 1)
+				for (int i = -sample_num; i < sample_num; i += 1)
 				{
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i, i)*width));
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(-i, -i)*width));
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i, -i)*width));
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(-i, i)*width));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i * width, i * height)));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(-i * width, -i * height)));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i * width, -i * height)));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(-i * width, i * height)));
 				}
 				
 			}
@@ -1143,28 +1146,28 @@ def ForBloomCross(strength = 1.0, width = 1.0, shape = 0, numberofsamples = 4):
 			if ((shape == 1) || (shape == 2))
 			{
 			
-				for (int i = -numberofsamples; i < numberofsamples; i += 1)
+				for (int i = -sample_num; i < sample_num; i += 1)
 				{
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i, 0)*width));
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(-i, 0)*width));
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(0, -i)*width));
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(0, i)*width));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i * width, 0)));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(-i * width, 0)));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(0, -i * height)));
+					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(0, i * height)));
 				}
 				
 			}
 			
 			if ((shape == 0) || (shape == 1))
-				sum /= (numberofsamples * 2) * 4;
+				sum /= (sample_num * 2) * 4;
 			else
-				sum /= ((numberofsamples * 2) * 4) * 2;
+				sum /= ((sample_num * 2) * 4) * 2;
 				
-			float brightness = (max(sum.r, max(sum.g, sum.b)) + min(sum.r, min(sum.g, sum.b))) / 2.0;
+			//float brightness = (max(sum.r, max(sum.g, sum.b)) + min(sum.r, min(sum.g, sum.b))) / 2.0;
 				
 			vec4 bloom = sum * (""" + str(float(strength)) + """);
 			
 			bloom.a = 1.0;
 			
-			gl_FragColor = center + (bloom * brightness);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
+			gl_FragColor = center + (bloom); //* brightness);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
 		}
 	"""
 	
