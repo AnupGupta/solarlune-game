@@ -164,7 +164,7 @@ XBOX360 = {
 	"LVertical":1,
 	"RHorizontal":4,
 	"RVertical":3,
-	"Triggers":5,
+	"Triggers":2,
 	
 	"AxisRight":1,			# Axis directions
 	"AxisDown":1,

@@ -59,8 +59,8 @@ JOYAXIS = 3                # Return the percentage that the axis is being presse
 MOUSEAXIS = 17
 
 STATE_UP = 0
-STATE_DOWN = 1
-STATE_PRESSED = 2
+STATE_PRESSED = 1
+STATE_DOWN = 2
 STATE_RELEASED = 3
 
 class CInputKey():
@@ -87,7 +87,7 @@ class CInputKey():
         self.keycode = keycode
         
         self.prevstate = 0
-        self.prevpos = [0, 0]                       # Previous position of the mouse
+        self.prevpos = [0.0, 0.0]                       # Previous position of the mouse
         self.active = 0.0
         self.state = STATE_UP                       # The state of the key input (just pressed, released, down, up, etc.)
         
@@ -109,29 +109,11 @@ class CInputKey():
             if logic.keyboard.events[self.keycode] == logic.KX_INPUT_ACTIVE:
                 
                 self.active = self.scalar
-                
-                if self.prevstate == 0:
-                    
-                    self.state = STATE_PRESSED
-                    
-                else:
-                    
-                    self.state = STATE_DOWN
-                
+                                
             else:
                 
-                self.active = 0
+                self.active = 0.0
                 
-                if self.prevstate == 1:
-                    
-                    self.state = STATE_RELEASED
-                
-                else:
-                    
-                    self.state = STATE_UP
-                        
-            self.prevstate = self.state
-
         if joy != None:
                         
             if self.inputtype == JOYBUTTON:
@@ -139,56 +121,20 @@ class CInputKey():
                 if self.keycode in joy.activeButtons:
                 
                     self.active = self.scalar
-                    
-                    if self.prevstate == 0:
-                        
-                        self.state = STATE_PRESSED
-                        
-                    else:
-                        
-                        self.state = STATE_DOWN
                                             
                 else:
                     
-                    self.active = 0
-                    
-                    if self.prevstate == 1:
-                        
-                        self.state = STATE_RELEASED
-                    
-                    else:
-                        
-                        self.state == STATE_UP
-               
-                self.prevstate = self.state
+                    self.active = 0.0
             
             elif self.inputtype == JOYHAT:
          
                 if self.keycode in joy.hatValues:
                 
                     self.active = self.scalar
-                    
-                    if self.prevstate == 0:
-                        
-                        self.state = STATE_PRESSED
-                        
-                    else:
-                        
-                        self.state = STATE_DOWN
-                                            
+                                                    
                 else:
                     
-                    self.active = 0
-                    
-                    if self.prevstate == 1:
-                        
-                        self.state = STATE_RELEASED
-                    
-                    else:
-                        
-                        self.state == STATE_UP
-               
-                self.prevstate = self.state
+                    self.active = 0.0
             
             elif self.inputtype == JOYAXIS:
                 
@@ -199,41 +145,11 @@ class CInputKey():
                 if pressed:
                     
                     self.active = abs(av) * self.scalar
-                    
-                    if self.prevstate == 0:
-                        
-                        self.state = STATE_PRESSED
-                        
-                    else:
-                        
-                        self.state = STATE_DOWN
-                    
+                            
                 else:
                     
                     self.active = 0.0
                     
-                    if self.prevstate == 1:
-                        
-                        self.state = STATE_RELEASED
-                        
-                    else:
-                        
-                        self.state = STATE_UP
-                    
-                self.prevstate = pressed
-
-            #elif self.inputtype == JOYAXISPERCENT:
-            #    
-            #    av = joy.axisValues[self.keycode]
-            #
-            #    if abs(av) > self.deadzone and math.copysign(1, av) == self.axisdirection:
-            #        
-            #        self.active = abs(av) * self.scalar
-            #        
-            #    else:
-            #        
-            #        self.active = 0.0
-
         elif self.inputtype == MOUSEAXIS:
             
             av = logic.mouse.position[self.keycode] - self.prevpos[self.keycode]
@@ -250,6 +166,26 @@ class CInputKey():
                 
             self.prevpos = [0.5, 0.5]#logic.mouse.position
 
+        #print (self.active, self.prevstate)
+
+        if self.active and not self.prevstate:
+            
+            self.state = STATE_PRESSED
+        
+        elif self.active and self.prevstate:
+            
+            self.state = STATE_DOWN
+        
+        elif not self.active and self.prevstate:
+            
+            self.state = STATE_RELEASED
+        
+        else:
+            
+            self.state = STATE_UP
+        
+        self.prevstate = self.active
+    
 class CInputDevice():
     
     """
@@ -358,7 +294,7 @@ class CInputDevice():
     
             for binding in self.events[group]:
          
-                self.bindings[binding] = {'active':0, 'state':0}
+                self.bindings[binding] = {'active':0.0, 'state':0}
                 
                 for input in self.events[group][binding]:
                     
@@ -367,10 +303,18 @@ class CInputDevice():
                     if input.active:
                   
                         self.bindings[binding] = {'active':input.active, 'state':input.state}
+                    
+                    else:
                         
-                    elif not self.bindings[binding]['active'] and input.state != STATE_UP:
+                        if input.state == STATE_RELEASED:
+                            
+                            self.bindings[binding]['state'] = input.state
+                    
+                    #elif not self.bindings[binding]['active']:
                         
-                        self.bindings[binding]['state'] = input.state
+                    #    if input.state != STATE_UP and input.prevstate:
+                        
+                    #        self.bindings[binding]['state'] = input.state
     
     def BindDown(self, bind):
         """
@@ -378,21 +322,21 @@ class CInputDevice():
         
         bind = binding name
         """
-        return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_DOWN else 0
+        return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_DOWN else 0.0
     def BindPressed(self, bind):
         """
         Checks to see if the binding you specify was just pressed this frame.
         
         bind = binding name
         """
-        return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_PRESSED else 0
+        return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_PRESSED else 0.0
     def BindReleased(self, bind):
         """
         Checks to see if the binding you specify was just released this frame. If it was, 1 is returned.
         
         bind = binding name
         """
-        return 1 if self.bindings[bind]['state'] == STATE_RELEASED else 0
+        return 1.0 if self.bindings[bind]['state'] == STATE_RELEASED else 0.0
     
     
     
