@@ -1919,11 +1919,14 @@ def Pixellate(pixel_w = 4.0, pixel_h = 4.0):
 	void main(void)
 	{
 		vec2 uv = gl_TexCoord[0].xy;
+		vec2 pixel = vec2(1.0 / bgl_RenderedTextureWidth, 1.0 / bgl_RenderedTextureHeight);
 			
-		float dx = """ + str(pixel_w) + """ * (1.0 / bgl_RenderedTextureWidth);
-		float dy = """ + str(pixel_h) + """ * (1.0 / bgl_RenderedTextureHeight);
+		float dx = """ + str(pixel_w) + """ * pixel.x;
+		float dy = """ + str(pixel_h) + """ * pixel.y;
 		
 		vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));
+		coord += pixel * 0.5; // Add half a pixel distance so that it doesn't pull from the pixel's edges,
+		// allowing for a nice, crisp pixellation effect
 		
 		coord.x = min(max(0.001, coord.x), 1.0);
 		coord.y = min(max(0.001, coord.y), 1.0);
