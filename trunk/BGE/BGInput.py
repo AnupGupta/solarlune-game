@@ -36,11 +36,12 @@ is being pressed).
 Check the BGInput example to see how it works.
 """
 
-KEY = 0
-JOYBUTTON = 1
-JOYHAT = 2
-JOYAXIS = 3                # Return the percentage that the axis is being pressed (the axis values themselves)
-MOUSEAXIS = 4
+KEY = 0             # Different input types; Keyboard key
+JOYBUTTON = 1       # Joystick button
+JOYHAT = 2          # Joystick hat (D-Pad on a lot of controllers)
+JOYAXIS = 3         # Joystick axes (sticks and triggers on a 360 controller)
+MOUSEAXIS = 4       # Mouse movement axes
+MOUSEBUTTON = 5     # Mouse button
 
 STATE_UP = 0
 STATE_PRESSED = 1
@@ -98,7 +99,7 @@ class CInputKey():
                 
                 self.active = 0.0
         
-        if self.inputtype == MOUSEAXIS:
+        elif self.inputtype == MOUSEAXIS:
             
             av = logic.mouse.position[self.keycode] - self.prevpos[self.keycode]
             
@@ -113,7 +114,17 @@ class CInputKey():
                 self.active = 0.0
                 
             self.prevpos = [0.5, 0.5]
-             
+         
+        elif self.inputtype == MOUSEBUTTON:
+            
+            if logic.mouse.events[self.keycode] == logic.KX_INPUT_ACTIVE:
+                
+                self.active = self.scalar
+                                
+            else:
+                
+                self.active = 0.0
+            
         elif joy != None:
                         
             if self.inputtype == JOYBUTTON:
@@ -291,12 +302,6 @@ class CInputDevice():
                         if input.state == STATE_RELEASED:
                             
                             self.bindings[binding]['state'] = input.state
-                    
-                    #elif not self.bindings[binding]['active']:
-                        
-                    #    if input.state != STATE_UP and input.prevstate:
-                        
-                    #        self.bindings[binding]['state'] = input.state
     
     def BindDown(self, bind):
         """
