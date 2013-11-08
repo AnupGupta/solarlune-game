@@ -1884,34 +1884,24 @@ def EdgeDetect(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1]):
 	}
 		"""	)
 
-def Pixellate(pixel_w = 4.0, pixel_h = 4.0):
+def Pixellate(resolution_x = 320, resolution_y = 240):
 
 	""" 
-	Pixelation filter, adapted from a script from Geexlab / Geeks3D.com.
+	A sharp pixellation filter.
 	
 	Author: SolarLune
 	Date Updated: 6/6/11
+
+	resolution_x = target resolution on the X axis. Defaults to 320.
+	resolution_y = target resolution on the Y axis. Defaults to 240.
 	
-	Why a function? Because this way, users can easily customize the filter
-	to return a custom-made script. Note that this only works when calling the script (so don't call it
-	every frame as that will kill your FPS. It's better to copy the script you want and pass a uniform variable 
-	if you want to alter parameters while running the filter)
+	A larger X-axis resolution would equal a less blocky picture. Note that the pixellation is locked to
+	whole numbers, so there's no way to get "1.5x" pixellation, so to speak. You should probably choose
+	a resolution that's both rather small as well as a resolution that is a whole division of what you're going
+	to be running the game at most likely (i.e. 320x240 on a 1280x960 game window, not 600x500 on a 800x600 game window)
 	
-	pixel_w = pixel-size on the X-Axis
-	pixel_h = pixel-size on the Y-Axis
-	
-	Higher numbers equals a blockier picture
 	"""
-	#winsize = [render.getWindowWidth(), render.getWindowHeight()]	
-	
 	return ("""
-	// Name: Pixellate
-	// Author: SolarLune
-	// Date: 6/6/11
-	//
-	// Notes: Pixellates the screen using blocks consisting of cellx size on the 
-	// X-axis and celly size on the Y-axis.
-	
 	uniform sampler2D bgl_RenderedTexture;
 	uniform float bgl_RenderedTextureWidth;
 	uniform float bgl_RenderedTextureHeight;
@@ -1920,11 +1910,14 @@ def Pixellate(pixel_w = 4.0, pixel_h = 4.0):
 	{
 		vec2 uv = gl_TexCoord[0].xy;
 		vec2 pixel = vec2(1.0 / bgl_RenderedTextureWidth, 1.0 / bgl_RenderedTextureHeight);
+		int target_x = int(ceil(bgl_RenderedTextureWidth / """ + str(float(resolution_x)) + """));
+		int target_y = int(ceil(bgl_RenderedTextureHeight / """ + str(float(resolution_y)) + """));
 			
-		float dx = """ + str(pixel_w) + """ * pixel.x;
-		float dy = """ + str(pixel_h) + """ * pixel.y;
+		float dx = pixel.x * target_x;
+		float dy = pixel.y * target_y;
 		
 		vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));
+		
 		coord += pixel * 0.5; // Add half a pixel distance so that it doesn't pull from the pixel's edges,
 		// allowing for a nice, crisp pixellation effect
 		
@@ -1934,7 +1927,6 @@ def Pixellate(pixel_w = 4.0, pixel_h = 4.0):
 		gl_FragColor = texture2D(bgl_RenderedTexture, coord);
 	}
 	""")
-
 	
 def RadialBlur(percentage = 1.0, minimum = 1.0):
 	""" 

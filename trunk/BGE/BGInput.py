@@ -23,6 +23,8 @@ P.S. It would be nice if you could attribute me for the creation of this and my 
 """
 Change-log:
 
+11/8/13: Slight code cleanup.
+
 10/2/13: Updated input methods to drop the need to use states for each individual binding
 (i.e. JumpPressed and JumpDown). Now you just specify the type of binding it is when you add it (KEY for keyboard,
 JOYBUTTON for joystick button, etc.), and then use the input device itself to check the state. There are three
@@ -35,28 +37,10 @@ Check the BGInput example to see how it works.
 """
 
 KEY = 0
-#KEYUP = 1
-#KEYPRESSED = 2
-#KEYRELEASED = 3
-
 JOYBUTTON = 1
-#JOYBUTTONUP = 5
-#JOYBUTTONPRESSED = 6
-#JOYBUTTONRELEASED = 7
-
 JOYHAT = 2
-#JOYHATUP = 9
-#JOYHATPRESSED = 10
-#JOYHATRELEASED = 11
-
 JOYAXIS = 3                # Return the percentage that the axis is being pressed (the axis values themselves)
-#JOYAXISPERCENT = 4
-#JOYAXISDOWN = 13        # Otherwise, return 0 or 1 values
-#JOYAXISUP = 14
-#JOYAXISPRESSED = 15
-#JOYAXISRELEASED = 16
-
-MOUSEAXIS = 17
+MOUSEAXIS = 4
 
 STATE_UP = 0
 STATE_PRESSED = 1
@@ -113,8 +97,24 @@ class CInputKey():
             else:
                 
                 self.active = 0.0
+        
+        if self.inputtype == MOUSEAXIS:
+            
+            av = logic.mouse.position[self.keycode] - self.prevpos[self.keycode]
+            
+            self.state = STATE_DOWN
+            
+            if math.copysign(1, av) == self.axisdirection and abs(av) > self.deadzone:
+            
+                self.active = abs(av) * self.scalar
                 
-        if joy != None:
+            else:
+                
+                self.active = 0.0
+                
+            self.prevpos = [0.5, 0.5]
+             
+        elif joy != None:
                         
             if self.inputtype == JOYBUTTON:
          
@@ -149,25 +149,7 @@ class CInputKey():
                 else:
                     
                     self.active = 0.0
-                    
-        elif self.inputtype == MOUSEAXIS:
-            
-            av = logic.mouse.position[self.keycode] - self.prevpos[self.keycode]
-            
-            self.state = STATE_DOWN
-            
-            if math.copysign(1, av) == self.axisdirection and abs(av) > 0.001:
-            
-                self.active = abs(av) * self.scalar
-                
-            else:
-                
-                self.active = 0.0
-                
-            self.prevpos = [0.5, 0.5]#logic.mouse.position
-
-        #print (self.active, self.prevstate)
-
+        
         if self.active and not self.prevstate:
             
             self.state = STATE_PRESSED
@@ -337,6 +319,3 @@ class CInputDevice():
         bind = binding name
         """
         return 1.0 if self.bindings[bind]['state'] == STATE_RELEASED else 0.0
-    
-    
-    

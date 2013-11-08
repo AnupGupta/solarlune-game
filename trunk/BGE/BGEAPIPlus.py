@@ -8,9 +8,6 @@ class Scenes:
     def __len__(self):
         return len(logic.getSceneList())
 
-
-
-
     def __iter__(self):
         return iter(logic.getSceneList())
     
@@ -24,9 +21,6 @@ class Scenes:
         if isinstance(key, str):
             return {s.name: s for s in scenes}[key]
         return scenes[key]
-
-
-
 
     def set(self, key):
         logic.getCurrentScene().replace(key)
