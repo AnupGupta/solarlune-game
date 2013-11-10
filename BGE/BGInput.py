@@ -23,6 +23,9 @@ P.S. It would be nice if you could attribute me for the creation of this and my 
 """
 Change-log:
 
+11/9/13: Updated to be able to properly handle joystick hat input correctly (the four directions
+on the hats are bit values; you're not meant to use the diagonals directly).
+
 11/8/13: Slight code cleanup.
 
 10/2/13: Updated input methods to drop the need to use states for each individual binding
@@ -139,7 +142,9 @@ class CInputKey():
             
             elif self.inputtype == JOYHAT:
          
-                if self.keycode in joy.hatValues:
+                hat = joy.hatValues[0] # TODO: Expand this to fit more than one hat
+                
+                if hat & self.keycode:
                 
                     self.active = self.scalar
                                                     
@@ -202,7 +207,7 @@ class CInputDevice():
     
     device.Poll('keyboard')
     
-    print (device.bindings['jump'])
+    print (device.BindDown('jump'))
     
     -------------
     
