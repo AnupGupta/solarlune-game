@@ -333,25 +333,25 @@ def Sprite(spriteobj = None):
 				vertex[a] = obj.meshes[obj['sprmat']].getVertex(obj['sprmesh'],a)	# The sprite object's vertices; used only by the Sprite() function
 			
 			if obj['sprflipx'] == 0 and obj['sprflipy'] == 0:
-				vertex[0].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
-				vertex[1].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
-				vertex[2].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
-				vertex[3].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
-			elif obj['sprflipx'] == 0 and obj['sprflipy'] == 1:
-				vertex[3].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
-				vertex[2].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
-				vertex[1].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
-				vertex[0].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
-			elif obj['sprflipx'] == 1 and obj['sprflipy'] == 0:
-				vertex[1].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
-				vertex[0].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
-				vertex[3].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
-				vertex[2].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
-			else:
 				vertex[2].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
 				vertex[3].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
 				vertex[0].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
 				vertex[1].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
+			elif obj['sprflipx'] == 0 and obj['sprflipy'] == 1:
+				vertex[1].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
+				vertex[0].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
+				vertex[3].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
+				vertex[2].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
+			elif obj['sprflipx'] == 1 and obj['sprflipy'] == 0:
+				vertex[3].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
+				vertex[2].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
+				vertex[1].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
+				vertex[0].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
+			else:
+				vertex[0].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] + (obj['sprh'] * anim[subi])])
+				vertex[1].setUV([obj['sprw'] * anim[0],obj['sprh'] + (obj['sprh'] * anim[subi])])
+				vertex[2].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
+				vertex[3].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
 			
 			if obj['sprrotate'] != None:					# If you don't set the rotate value, then you're saying that you'll handle it.
 				ori = obj['sprori'].copy()

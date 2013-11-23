@@ -23,6 +23,8 @@ P.S. It would be nice if you could attribute me for the creation of this and my 
 """
 Change-log:
 
+11/18/13: Changed order of arguments for CInputDevice constructor.
+
 11/9/13: Updated to be able to properly handle joystick hat input correctly (the four directions
 on the hats are bit values; you're not meant to use the diagonals directly).
 
@@ -235,7 +237,7 @@ class CInputDevice():
         self.bindings = {}
         self.states = {} # The states of individual bindings (seemed easier than having to use bindings['active'] and bindings['state'])
         
-    def Add(self, bindingname, inputtype, keycode, group = "default", axisdir = 1, deadzone = 0.1, joyindex = 0, scalar = 1.0):
+    def Add(self, bindingname, inputtype, keycode, axisdir = 1, deadzone = 0.1, joyindex = 0, scalar = 1.0, group = "default"):
         
         """
         Add a key binding.
@@ -315,6 +317,7 @@ class CInputDevice():
         bind = binding name
         """
         return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_DOWN else 0.0
+    
     def BindPressed(self, bind):
         """
         Checks to see if the binding you specify was just pressed this frame.
@@ -322,6 +325,7 @@ class CInputDevice():
         bind = binding name
         """
         return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_PRESSED else 0.0
+    
     def BindReleased(self, bind):
         """
         Checks to see if the binding you specify was just released this frame. If it was, 1 is returned.

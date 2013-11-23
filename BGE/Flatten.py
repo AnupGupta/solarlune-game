@@ -28,6 +28,8 @@ def Flatten(destination, sources):
 	destination = object that you want to alter
 	sources = list of objects that you want to flatten into the local mesh
 	
+	Returns a list of the vertices that have been flattened into the destination mesh
+	
 	- Notes -
 	
 	The Blender Game Engine can handle a lot of polygons drawing at once, but it tends to chug

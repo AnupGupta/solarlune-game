@@ -18,6 +18,10 @@ from bge import logic
 
 import random, math, mathutils
 
+GN_CONNECTION_STYLE_ONE = 0 # Connection styles for the GenNodes function; ONE = all nodes connect to another one (other than themselves) randomly
+GN_CONNECTION_STYLE_ALL = 1 # ALL = Each node makes a connect to every other node
+GN_CONNECTION_STYLE_HUB = 2 # HUB = Each node connects to a pre-determined node (like a spiderweb)
+
 #### Helper Functions ####
 
 def GetDimensions(object, roundit = 3, mesh = None):
@@ -109,6 +113,14 @@ def GetSurroundingCells(room, celly, cellx):
 	num = len(cells) - cells.count(0)
 
 	return [[left, right, up, down], num]
+
+def Clamp(value, minimum, maximum):
+	"""
+	Clamp: Clamps the specified 'value' between the maximum and minimum values.
+	Returns 'max' when 'value' is greater than 'max', 'min' when 'value' is less than 'min',
+	and 'value' itself when neither is true.	
+	"""
+	return (min(max(value, minimum), maximum))
 
 # ~~~~ Generation Functions ~~~~~
 	
@@ -231,12 +243,18 @@ def GenGrowth(xsize = 9, ysize = 9, maxnum = 0, randseed = None, mustconnect = 1
 		
 	return room
 
-def GenNodes(xsize = 9, ysize = 9, nodecount = 4, spacing = 1, closest = 0, randseed = None, nodetypes = [1], halltypes=[1], roomlist = None):
+def GenNodes(xsize = 9, ysize = 9, nodecount = 0, spacing = 1,
+			 randseed = None, nodetypes = [2], halltypes=[1], emptytypes = [0],
+			 straight_halls = False,
+			 connection_style = GN_CONNECTION_STYLE_ONE, roomlist = None):
 	
 	"""
+	
+	This method of random generation spawns several nodes, and then connects those nodes with halls.
+	
 	x, ysize = size of the generated list
 	
-	nodecount = number of nodes to spawn
+	nodecount = number of nodes to spawn; defaults to 0, which is half of the width of the room.
 	
 	spacing = spawn nodes with a minimum number of >spacing< blank nodes between them (both x and y axes individually).
 	An example would be a node at [4, 4] and another one at [18, 5]. If spacing == 1, then that won't work, since
@@ -246,18 +264,30 @@ def GenNodes(xsize = 9, ysize = 9, nodecount = 4, spacing = 1, closest = 0, rand
 	Note! If spacing is too large and the room has too small a size, it will basically be tried for, but otherwise
 	the room will generate however it can. Use small spacing amounts and large rooms.
 	
-	closest = connect nodes to each other based on distance, rather than randomly
-	
-	concount = number of connections to make
-	
 	randseed = random seed for spawning the same list each time
 	
-	halltypes = a list of different (randomly chosen) numbers that can spawn for the halls in-between nodes
 	nodetypes = a list of different (randomly chosen) numbers that can spawn for the nodes separating halls
+	
+	halltypes = a list of different (randomly chosen) numbers that can spawn for the halls in-between nodes
+	
+	emptytypes = a list of different (randomly chosen) numbers that can spawn for the non-hall or node spots
+	
+	straight_halls = determines if the hallways basically only bend once max, or if they "stair-step" between nodes
+	
+	connection_style = determines how the nodes connect to each other.
+	
+	GN_CONNECTION_STYLE_ONE = All nodes each connect to one other randomly chosen node
+	(this will result in the map being connected correctly, of course)
+	
+	GN_CONNECTION_STYLE_ALL = All nodes connect to each other. For an example, think of a square with four points -
+	each point connects	to the three other points.
+	
+	GN_CONNECTION_STYLE_HUB = All nodes connect to one other node specifically; i.e., if you have 10 nodes, one
+	node will connect to all other nodes, and every other node will only connect to the previous one
 		
 	roomlist = preexisting list to use
 	"""
-		
+						
 	if roomlist != None:
 		
 		maplist = roomlist
@@ -268,25 +298,51 @@ def GenNodes(xsize = 9, ysize = 9, nodecount = 4, spacing = 1, closest = 0, rand
 		
 	else:
 		
-		maplist = [[0 for j in range(xsize)] for i in range(ysize)]
+		maplist = []
+		
+		for j in range(ysize):
+			
+			maplist.append([])
+			
+			for i in range(xsize):
+				
+				maplist[j].append(random.choice(emptytypes))
+		
+		#maplist = [[random.choice(emptytypes) for j in range(xsize)] for i in range(ysize)]
 	
 		middle = [xsize//2, ysize//2]
-		
+
 	randomstate = random.getstate()
 	
-	random.seed (randseed)
+	random.seed(randseed)
 		
 	#maplist[middle[1]][middle[0]] = random.choice(
 		
-	nodelist = 		[]	# List of nodes
+	nodelist = 	[]	# List of nodes
 	toconnect = {}	# List of nodes that are still up for connections and their connection counts
 		
 	if nodecount == 0:
 		ndc = int(xsize / 2)
 	else:
 		ndc = nodecount
+	
+	if roomlist:
 		
-	for n in range(ndc):
+		list_node_count = 0
+		
+		for c in range(len(roomlist)):
+			for x in range(len(roomlist[c])):
+				if roomlist[c][x] in nodetypes:
+					
+					node = (c,x)
+					nodelist.append(node)
+					toconnect[node] = []
+					
+					list_node_count += 1
+		
+		ndc -= list_node_count
+				
+	for n in range(ndc):	# Generate nodes
 		
 		node = None
 		
@@ -301,11 +357,9 @@ def GenNodes(xsize = 9, ysize = 9, nodecount = 4, spacing = 1, closest = 0, rand
 					node = (cy, cx)
 				
 					nodelist.append(node)
-					toconnect[node] = 0
+					toconnect[node] = [] # What nodes the node is connected to
 				
 		else:
-			
-			#while (node == None):
 			
 			for dist in range(spacing+1, -1, -1):					# If you can't find a node at the specified minimum distance, then search at a closer distance
 
@@ -314,7 +368,7 @@ def GenNodes(xsize = 9, ysize = 9, nodecount = 4, spacing = 1, closest = 0, rand
 					cy = random.choice(range(len(maplist)))
 					cx = random.choice(range(len(maplist[cy])))
 							
-					if maplist[cy][cx] == 0:
+					if maplist[cy][cx] in emptytypes:
 						node = (cy, cx)
 
 						for other in nodelist:
@@ -329,207 +383,102 @@ def GenNodes(xsize = 9, ysize = 9, nodecount = 4, spacing = 1, closest = 0, rand
 
 					if node != None:
 						nodelist.append(node)
-						toconnect[node] = 0
+						toconnect[node] = []
 						break
 				
 				if node != None:
 					break
-			
+
 		maplist[node[0]][node[1]] = random.choice(nodetypes)
-		
-	for node in list(toconnect.keys()):
+	
+	if nodecount == 1:
+		print ("ERROR: nodecount needs to be larger than 1")
+		return
+			
+	for node in list(toconnect.keys()):					# Connect nodes
 		
 		destnode = None
 						
 		while destnode == None:							# Find a destination node
 			
-			dn = random.choice(list(toconnect.keys()))	# Choose one from the toconnect dict
-						
-			if dn != node:
+			if len(toconnect[node]) >= len(toconnect.keys()) - 1: # Connected to all available nodes
 				
-				destnode = dn
+				break
+			
+			else:
+				
+				if connection_style == GN_CONNECTION_STYLE_ONE:
+					connection_list = [random.choice(list(toconnect.keys()))] # Changes with connection_style
+				elif connection_style == GN_CONNECTION_STYLE_ALL:
+					connection_list = [c for c in toconnect.keys()]#[random.choice(list(toconnect.keys()))] # Changes with connection_style
+				elif connection_style == GN_CONNECTION_STYLE_HUB:
+					connection_list = [list(toconnect.keys())[0]]
+				
+					if connection_list[0] == node:
+						
+						break	 # Break out of the while loop
 
-				diff = tuple(mathutils.Vector(dn) -  mathutils.Vector(node))
-				
-				target = list(node)
-				
-				for x in range(10000):				# Can make a 10000 unit path
-									
-					if destnode[0] > target[0]:
-						target[0] += 1
-					elif destnode[0] < target[0]:
-						target[0] -= 1
-					elif destnode[1] > target[1]:
-						target[1] += 1
-					elif destnode[1] < target[1]:
-						target[1] -= 1
+				for dn in connection_list:
+					
+					if dn != node and not dn in toconnect[node]:
+								
+						destnode = dn
+					
+						diff = mathutils.Vector(dn) -  mathutils.Vector(node)
 						
-					if tuple(target) == destnode:									# Destination
+						if straight_halls:
+							
+							target = list(node)
 						
-						toconnect[destnode] += 1
-						toconnect[node] += 1
+						else:
+							
+							target = mathutils.Vector(node)
+							axis_x = 1
 						
-						#if toconnect[destnode] > maxcon:
-						#	del toconnect[destnode]
-						#if toconnect[node] + 1 > maxcon:
-						#	del toconnect[node]
+						#for x in range(10000):				# Can make a 10000 unit path
+						for x in range(50):				# Can make a 10000 unit path
+								
+							if straight_halls:
+												
+								if destnode[0] > target[0]:
+									target[0] += 1
+								elif destnode[0] < target[0]:
+									target[0] -= 1
+								elif destnode[1] > target[1]:
+									target[1] += 1
+								elif destnode[1] < target[1]:
+									target[1] -= 1
+								
+							else:
+								
+								axis_x = not axis_x
+								
+								if axis_x:
+									target.x += diff.normalized().x
+								else:
+									target.y += diff.normalized().y
+								
+							target_rnd = (int(Clamp(round(target[0]), 0, xsize - 1)),
+										  int(Clamp(round(target[1]), 0, ysize - 1)))
 						
-						break
-						
-					else:
-						maplist[target[0]][target[1]] = random.choice(halltypes)	# Path, not the end, so make it a hall room
-
+							if target_rnd == destnode:#target_floor == destnode or target_ceil == destnode:									# Destination
+								
+								maplist[destnode[0]][destnode[1]] = random.choice(nodetypes) # Make sure we didn't overwrite it
+								maplist[node[0]][node[1]] = random.choice(nodetypes)
+								
+								toconnect[tuple(node)].append(destnode)
+								toconnect[tuple(destnode)].append(node)
+								
+								break
+							
+							else:
+								
+								if maplist[target_rnd[0]][target_rnd[1]] in emptytypes: # Not occupied
+									maplist[target_rnd[0]][target_rnd[1]] = random.choice(halltypes)
+								
 	random.setstate(randomstate)
 	
 	return (maplist)
-
-#def GenStreet(sizex, sizey, streetcount = 0, streetsize = 0, streettyperandom = 1, forcebend = 1, mustconnect = 1, streettypes = [1], randseed = None):
-	
-	#"""
-	#sizex = how large the map is on the X-axis
-	#sizey = Y-axis
-	
-	#streetcount = how many streets there are;
-	#0 = 10
-	#> 0 = exact number of streets
-		
-	#streetsize = how long the streets are;
-	#0 = half of sizex and sizey,
-	#> 0 = exact size of streets in grid spaces
-	
-	#streettyperandom = how the street types are random;
-	
-	#0 = not random at all (all are set to 1)
-	#1 = each street is random (lines of 1's, lines of 2's, etc)
-	#2 = each block is random
-	
-	#forcebend = if streets can end in other streets that stretch on in the same direction	
-	#mustconnect = if the streets should connect
-	#streettypes = a list of types of streets
-	#"""
-	
-	#roomnum = 0
-	
-	#map = []
-	
-	#randomstate = random.getstate() 					# Used to preserve random settings before using the function
-	
-	#random.seed(randseed)								# Set the seed, if there is one
-	
-	#for y in range(sizey):						# Map generation
-		
-		#map.append([])
-		
-		#for x in range(sizex):
-			
-			#map[y].append(0)
-			
-	#middley = math.floor(sizey / 2.0)			# Set the middle cell to be filled
-	#middlex = math.floor(sizex / 2.0)
-	#map[middley][middlex] = random.choice(streettypes)
-	
-	#cell = None
-	#firsttime = 1
-	
-	#for s in range(streetcount):
-	
-		#if firsttime:							# Grab the center cell if it's the first time
-			
-			#cellx, celly = middlex, middley
-			#cell = map[celly][cellx]
-		
-		#else:
-				
-			#while (cell == None):					# Grab a random cell until you find an occupied one
-				
-				#cellx, celly = randint(0, sizex-1), randint(0, sizey-1)
-				#c = map[celly][cellx]
-				#sur = GetSurroundingCells(map, celly, cellx)
-				#if 1 in sur[0] and c == 0:
-					#cell = c	
-				
-		##for y in range(10):
-			
-		#if firsttime:
-			#direction = random.choice([0, 1])
-			#firsttime = 0
-		#else:
-			#sur = GetSurroundingCells(map, celly, cellx)
-			
-			#if forcebend:
-				
-				#if sur[0][0] == 0 and sur[0][1] == 0:
-					#direction = 0
-				#else:
-					#direction = 1
-					
-				#print (sur, direction)
-					
-			#else:
-				
-				#direction = random.choice([0, 1])
-				
-				##if sur[0][0] != 0 and sur[0][1] != 0:	# Sides are done
-				##	direction = 1	# Should be the opposite of the direction taken
-				##else:
-				##	direction = 0
-									
-		#if streettyperandom == 1:
-			#strchoice = random.choice(streettypes)
-		#elif streettyperandom == 0:
-			#strchoice = streettypes[0]
-		
-		#if direction == 0:							# Left and right
-			
-			#if streetsize == 0:
-				#strsize = math.floor(sizex / 2.0)
-			#else:
-				#strsize = streetsize
-			
-			#for x in range(strsize):
-				
-				#try:
-					#if streettyperandom == 2:		# Per placed block
-						#strchoice = random.choice(streettypes)
-					#map[celly][cellx + x] = strchoice
-				#except IndexError:
-					#pass
-					
-				#try:
-					#if streettyperandom == 2:
-						#strchoice = random.choice(streettypes)
-					#map[celly][cellx - x] = strchoice
-				#except IndexError:
-					#pass
-					
-		#else:										# Top and bottom
-			
-			#if streetsize == 0:
-				#strsize = math.floor(sizey / 2.0)
-			#else:
-				#strsize = streetsize
-			
-			#for x in range(strsize):				# Populate street
-				
-				#try:
-					#if streettyperandom == 2:		# Per placed block
-						#strchoice = random.choice(streettypes)
-					#map[celly + x][cellx] = strchoice
-				#except IndexError:					# Ignore index errors
-					#pass
-					
-				#try:
-					#if streettyperandom == 2:
-						#strchoice = random.choice(streettypes)
-					#map[celly - x][cellx] = strchoice
-				#except IndexError:
-					#pass
-					
-		#cell = None	# Reset cell for the next street
-				
-	#random.setstate(randomstate)
-	
-	#return (map)
 
 ##### Map population functions #####
 
