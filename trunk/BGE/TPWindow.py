@@ -1,5 +1,4 @@
 
-
 """
 Three-piece windows.
 """
@@ -7,8 +6,6 @@ Three-piece windows.
 import bgui
 
 from bge import render
-
-# TODO: Change the source from using 3x3 equal sizes to 2x2, essentially the corners, and stretching the middles
 
 class CWindow(bgui.Widget):
 	
