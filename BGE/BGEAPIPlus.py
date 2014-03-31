@@ -28,6 +28,9 @@ class Scenes:
     def add(self, key, overlay=True):
         logic.addScene(key, overlay)
         
+    def __del__(self):
+        del self   
+        
     def remove(self, key):
         self.__getitem__(key).end()
         

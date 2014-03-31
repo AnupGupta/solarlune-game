@@ -30,6 +30,13 @@
 ###
 ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+### The 2D filter system in the BGE has access to the following samplers:
+
+### bgl_RenderedTexture (The usual screen grab)
+### bgl_LuminanceTexture (The luminosity)
+### bgl_DepthTexture (The depth of each pixel (fragment))
+
 from bge import logic
 
 from bge import render
@@ -587,6 +594,24 @@ def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
 	bloom = """
 					
 		uniform sampler2D bgl_RenderedTexture;
+		uniform sampler2D bgl_LuminanceTexture;
+		
+		highp float rand(vec2 co)
+		{
+			highp float a = 12.9898;
+			highp float b = 78.233;
+			highp float c = 43758.5453;
+			highp float dt= dot(co.xy ,vec2(a,b));
+			highp float sn= mod(dt,3.14);
+			return fract(sin(sn) * c);
+		}
+		
+		float luminance(vec3 rgb){
+		
+			const vec3 o = vec3(0.2125,  0.7154, 0.0721);
+			return dot(rgb, o);
+		
+		}
 
 		void main()
 		{
@@ -599,26 +624,43 @@ def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
 			float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
 			float height = 0.002 * """ + str(float(height)) + """;  // height = how tall of a sample to use
 			
+			//width *= 1 - texture2D(bgl_LuminanceTexture, texcoord).r;
+			//height *= 1 - texture2D(bgl_LuminanceTexture, texcoord).r;
+			
 			int sample_num_x = """ + str(int(sample_num_x)) + """;
 			int sample_num_y = """ + str(int(sample_num_y)) + """;
 			
+			vec2 tv;
+			float r;
+			
+			float d = 0.75;
+						
 			for (int i = -sample_num_x; i < sample_num_x; i++)
 			{
 				for (int j = -sample_num_y; j < sample_num_y; j++)
 				{
-					sum += texture2D(bgl_RenderedTexture, texcoord + (vec2(i * width, j * height)));
+					
+					r = d + (rand(texcoord.xy) * (1 - d));
+					
+					
+					tv.x = texcoord.x + (i * width * r);
+					tv.y = texcoord.y + (j * height * r);	
+						
+				
+					sum += texture2D(bgl_RenderedTexture, tv);
 				}
 			}
-			
+						
 			sum /= ((sample_num_x * 2) * (sample_num_y * 2));
-				
-			//float brightness = (max(sum.r, max(sum.g, sum.b)) + min(sum.r, min(sum.g, sum.b))) / 2.0;	// Luminance
-				
-			vec4 bloom = sum * (""" + str(float(strength)) + """);
+			
+			float str = """ + str(float(strength)) + """;
+			
+			vec4 bloom = sum * str;
 			
 			bloom.a = 1.0;
 			
 			gl_FragColor = center + (bloom);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
+
 		}
 	"""
 	
@@ -1370,22 +1412,55 @@ def Contrast(strength = 1.0):
 		"""
 	)	
 
-normal = """
+def Normal(return_type = 0):
 	
-	// Name: Normal Filter (no effects)
-	// Author: SolarLune
-	// Date Updated: 6/6/11
-	// 
-	// Notes: This is a good template for making your own 2D screen filter from.
+	### Just a 2D filter without any changes, basically.
+	### 0 = Rendered texture (screen)
+	### 1 = Luminance texture
+	### 2 = Depth texture (will show up white; you (I) need to linearize it for it to be actually usable)
 	
-	uniform sampler2D bgl_RenderedTexture;
-
-	void main(void)
-	{
-		vec4 color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
-		gl_FragColor = color;
-	}
-		"""		
+	if return_type == 0:
+		
+		filt = """
+		
+		uniform sampler2D bgl_RenderedTexture;
+	
+		void main(void)
+		{
+			vec4 color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
+			gl_FragColor = color;
+		}
+			"""
+			
+	elif return_type == 1:
+		
+		filt = """
+		
+		uniform sampler2D bgl_LuminanceTexture;
+	
+		void main(void)
+		{
+			vec4 color = texture2D(bgl_LuminanceTexture, gl_TexCoord[0].st);
+			gl_FragColor = color;
+		}
+			"""
+			
+	else:
+		
+		cam = logic.getCurrentScene().active_camera
+		
+		filt = """
+		
+		uniform sampler2D bgl_DepthTexture;
+	
+		void main(void)
+		{
+			vec4 color = texture2D(bgl_DepthTexture, gl_TexCoord[0].st);
+			gl_FragColor = color / """ + str(cam.far) + """;
+		}
+			"""
+			
+	return filt
 
 def DesaturateUni(var = 'desatstr'):
 
@@ -1927,6 +2002,47 @@ def Pixellate(resolution_x = 320, resolution_y = 240):
 		gl_FragColor = texture2D(bgl_RenderedTexture, coord);
 	}
 	""")
+
+def PixellateFactor(px_x = 4, px_y = 4):
+
+	""" 
+	A pixellation filter that uses factor values instead of resolution sizes.
+	
+	Author: SolarLune
+	Date Updated: 6/6/11
+
+	px_x = size of pixels on the x-axis
+	px_y = size of pixels on the y-axis
+	"""
+	
+	return ("""
+	uniform sampler2D bgl_RenderedTexture;
+	uniform float bgl_RenderedTextureWidth;
+	uniform float bgl_RenderedTextureHeight;
+	
+	void main(void)
+	{
+		vec2 uv = gl_TexCoord[0].xy;
+		vec2 pixel = vec2(1.0 / bgl_RenderedTextureWidth, 1.0 / bgl_RenderedTextureHeight);
+		
+		int target_x = """ + str(px_x) + """;
+		int target_y = """ + str(px_y) + """;
+			
+		float dx = pixel.x * target_x;
+		float dy = pixel.y * target_y;
+		
+		vec2 coord = vec2(dx * floor(uv.x / dx), dy * floor(uv.y / dy));
+		
+		coord += pixel * 0.5; // Add half a pixel distance so that it doesn't pull from the pixel's edges,
+		// allowing for a nice, crisp pixellation effect
+		
+		coord.x = min(max(0.001, coord.x), 1.0);
+		coord.y = min(max(0.001, coord.y), 1.0);
+		
+		gl_FragColor = texture2D(bgl_RenderedTexture, coord);
+	}
+	""")
+
 	
 def RadialBlur(percentage = 1.0, minimum = 1.0):
 	""" 
