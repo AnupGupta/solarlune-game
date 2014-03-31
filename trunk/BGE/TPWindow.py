@@ -9,8 +9,8 @@ from bge import render
 
 class CWindow(bgui.Widget):
 	
-	def __init__(self, parent, name, image, texco, chunksize = 0.05, size=[0.5, 0.5], pos=[0.0, 0.0], aspect=None, sub_theme='',
-			options=bgui.BGUI_DEFAULT, interp_mode = bgui.image.BGUI_LINEAR):		
+	def __init__(self, parent, name, image, texco, chunksize = 0.05, size=[0.5, 0.5], pos=[0.0, 0.0], aspect=None,
+				 sub_theme='',	options=bgui.BGUI_DEFAULT, interp_mode = bgui.image.BGUI_LINEAR, z_index=0):		
 		"""
 		Define a 3x3 window for the texco, and it will be split into thirds.
 		"""
@@ -41,8 +41,10 @@ class CWindow(bgui.Widget):
 		
 		self.FormWindow(texco)
 		
+		self.z_index = z_index
+	
 		self._color = [1.0, 1.0, 1.0, 1.0]
-		
+	
 	def FormWindow(self, texco, update = 0):
 		
 		"""
@@ -216,9 +218,22 @@ class CWindow(bgui.Widget):
 		return self._color
 	
 	def _setColor(self, value):
+
 		self._color = value
 		
 		for c in self.chunks:
 			self.chunks[c].color = value
+			
+	def _getZIndex(self):
+		return self._zindex
+	
+	def _setZIndex(self, value):
+		
+		self._zindex = value
+
+		for c in self.chunks:
+			if self.chunks[c] != None:
+				self.chunks[c].z_index = value
 
 	color = property(_getColor, _setColor)
+	z_index = property(_getZIndex, _setZIndex)
