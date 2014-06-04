@@ -3,7 +3,7 @@
 ##
 ## Author: SolarLune
 ##
-## Date Updated: 7/30/12
+## Date Updated: 6/4/14
 ##
 ##
 ##
@@ -105,10 +105,6 @@
 ## SpriteMesh is used, this physically flips the sprite around on the Z-axis,
 ## while if the Sprite function is used, then the UV-maps are flipped.
 ##
-## sprrotate
-##
-## Rotates the sprite around on the local Y-axis 
-##
 ## spractiveface and spractivemesh
 ##
 ## activeface tells which face to animate for the active mesh indicated
@@ -157,12 +153,7 @@ def SpriteInit(spriteobj = None, override = 0):
 	spranim = Animation array
 	sprfps = How many frames to display a second
 	sprflipx, sprflipy = Flipping the sprite on the respective axes using the object's orientation matrix.
-	
-	sprrotate = Rotation of the sprite in radians (around, on the local Y-axis). Doesn't get added to the sprite's original rotation.
-	Also, note that this doesn't work with Halo-enabled faces; they always face 'downwards'. To fix this, rotate the frame in 
-	Blender before game play. 
-	For example, if rotate = math.pi, then the sprite should rotate 180 degrees around, so that it's upside down and facing left.
-	
+
 	sprcamoptimize = Whether to slow down the connected sensor's frequency if the sprite goes out of frame
 	sprfpslock = Whether to lock the sprite's animation speed to the logic tic rate (the target FPS) or rather 
 	synchronize to the game's actual FPS rate; defaults to locking the animation rate to the actual game FPS
@@ -218,8 +209,6 @@ def SpriteInit(spriteobj = None, override = 0):
 			obj['sprflipx'] = 0
 		if not 'sprflipy' in obj:
 			obj['sprflipy'] = 0
-		if not 'sprrotate' in obj:
-			obj['sprrotate'] = None
 		
 		if not 'spranim' in obj:
 			obj['spranim'] = None
@@ -297,26 +286,21 @@ def Sprite(spriteobj = None):
 			
 			if obj['sprfps'] != 0.0:	# If spritefps == 0, don't advance the subimage
 				obj['sprsubimage'] += round(sprfps, 2) * frequency	# GameLogic's logic tic rate is constant, but if FPS drops below the tic rate, the animations won't adjust
+							
+			subimage = round(obj['sprsubimage'], 4)
+							
+			if math.floor(subimage) > len(anim) - 1:
+				while math.floor(subimage) > len(anim) - 1:
+					subimage -= len(anim) - 1
 
-			if math.floor(obj['sprsubimage']) > len(anim) - 1:
-				if obj['sprfps'] > 0:
-					while obj['sprsubimage'] > (len(anim) - 1):
-						obj['sprsubimage'] -= (len(anim) - 1)
-				else:
-					obj['sprsubimage'] = 1.0	
+			elif math.floor(subimage) < 1.0:	# Hack that makes sure the subimage is never looking at the animation column for a frame
+				while math.floor(subimage) < len(anim) - 1:
+					subimage += len(anim) - 1	
 
-			elif math.floor(obj['sprsubimage']) < 1.0:	# Hack that makes sure the subimage is never looking at the animation column for a frame
-				if obj['sprfps'] > 0:
-					obj['sprsubimage'] = 1.0		# Shouldn't really ever happen that the subimage is going up, but somehow goes below 0; if it does, just set it to a healthy 1.
-				else:
-					while obj['sprsubimage'] < (len(anim) - 1):
-						obj['sprsubimage'] += (len(anim) - 1)	
-						
-			if obj['sprsubimage'] < 1.0:
-				obj['sprsubimage'] = 1.0
-			if obj['sprsubimage'] > len(anim):
-				obj['sprsubimage'] = len(anim) - 1
-
+			obj['sprsubimage'] = subimage
+			
+			#print(obj['sprsubimage'], obj)
+			
 			subi = math.floor(obj['sprsubimage'])
 			
 			## This below is pretty much the only way to get the info from the vertices
@@ -353,10 +337,10 @@ def Sprite(spriteobj = None):
 				vertex[2].setUV([obj['sprw'] * anim[0],obj['sprh'] * anim[subi]])
 				vertex[3].setUV([obj['sprw'] + (obj['sprw'] * anim[0]),obj['sprh'] * anim[subi]])
 			
-			if obj['sprrotate'] != None:					# If you don't set the rotate value, then you're saying that you'll handle it.
-				ori = obj['sprori'].copy()
-				ori.y += obj['sprrotate']
-				obj.orientation = ori
+			#if obj['sprrotate'] != None:					# If you don't set the rotate value, then you're saying that you'll handle it.
+			#	ori = obj['sprori'].copy()
+			#	ori.y += obj['sprrotate']
+			#	obj.orientation = ori
 	
 	except KeyError:	# Initialize the sprite object if it hasn't been initialized
 		SpriteInit(obj)
@@ -437,26 +421,19 @@ def SpriteMesh(spriteobj = None):
 			obj['sprpastsubimage'] = obj['sprsubimage']
 			
 			if obj['sprfps'] != 0.0:	# If spritefps == 0, don't advance the subimage
-				obj['sprsubimage'] += round(sprfps, 2) * frequency	# GameLogic's logic tic rate is constant, but if FPS drops below the tic rate, the animations will adjust
+				obj['sprsubimage'] += round(sprfps, 2) * frequency	# GameLogic's logic tic rate is constant, but if FPS drops below the tic rate, the animations won't adjust
+							
+			subimage = round(obj['sprsubimage'], 4)
+							
+			if math.floor(subimage) > len(anim) - 1:
+				while math.floor(subimage) > len(anim) - 1:
+					subimage -= len(anim) - 1
 
-			if math.floor(obj['sprsubimage']) > len(anim) - 1:				
-				if obj['sprfps'] > 0:
-					while obj['sprsubimage'] > (len(anim) - 1):
-						obj['sprsubimage'] -= (len(anim) - 1)
-				else:
-					obj['sprsubimage'] = 1.0	
-			
-			elif math.floor(obj['sprsubimage']) < 1.0:	# Hack that makes sure the subimage is never looking at the animation column for a frame
-				if obj['sprfps'] > 0:
-					obj['sprsubimage'] = 1.0		# Shouldn't really ever happen that the subimage is going up, but somehow goes below 0; if it does, just set it to a healthy 1.
-				else:
-					while obj['sprsubimage'] < (len(anim) - 1):
-						obj['sprsubimage'] += (len(anim) - 1)	
+			elif math.floor(subimage) < 1.0:	# Hack that makes sure the subimage is never looking at the animation column for a frame
+				while math.floor(subimage) < len(anim) - 1:
+					subimage += len(anim) - 1	
 
-			if obj['sprsubimage'] < 1.0:
-				obj['sprsubimage'] = 1.0
-			if obj['sprsubimage'] > len(anim):
-				obj['sprsubimage'] = len(anim) - 1
+			obj['sprsubimage'] = subimage
 				
 			subi = math.floor(obj['sprsubimage'])
 		
@@ -466,18 +443,19 @@ def SpriteMesh(spriteobj = None):
 			
 				obj.replaceMesh(frame)
 
-			ori = obj.worldOrientation.to_euler()
-			
-			if obj['sprflipx']:
-				ori.z += math.pi
+			if obj['sprflipx'] or obj['sprflipy']:
 				
-			if obj['sprflipy']:
-				ori.x += math.pi
-			
-			if obj['sprrotate'] != None:					# If you set the rotate value, then you're saying that you'll handle it, so be aware of that
-				ori.y += obj['sprrotate']
-
-			obj.worldOrientation = ori
+				ori = obj.worldOrientation.to_euler()#mathutils.Euler()
+				
+				if obj['sprflipx']:
+					
+					ori.z = math.pi
+					
+				if obj['sprflipy']:
+					
+					ori.x = math.pi
+					
+				obj.worldOrientation = ori
 	
 	except KeyError:	# Initialize the sprite object if it hasn't been initialized
 	
