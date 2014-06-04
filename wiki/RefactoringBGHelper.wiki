@@ -14,22 +14,26 @@ It doesn't make sense from a logical point of view to have disparate related ele
 
 This new rearrangement of BGHelper should hopefully be far superior. I'll incrementally add to the "pack" using pre-existing modules or even full re-writes as necessary. I'm thinking about the following changes:
 
-BGHelper.Filters < SFL (Screen Filter Library) module
+ * BGHelper.Filters < SFL (Screen Filter Library) module
 
-BGHelper.Input < Input binding (BGInput, JoyProfile) module
+ * BGHelper.Input < Input binding (BGInput, JoyProfile) module
 
-BGHelper.Path < Node paths (from BGHelper)
+ * BGHelper.Path < Node paths (from BGHelper); if I make a Math module, it would go into there.
 
-BGHelper.RLG < RLG (Random Level Generation) module
+ * BGHelper.RLG < RLG (Random Level Generation) module
 
-BGHelper.Mesh.Trail < LightTrail (waving scarves, trails behind moving objects, etc)
-BGHelper.Mesh.Wave < Waves (maybe)
-BGHelper.Mesh.Sprite < Sprites (2D sprite animations)
-BGHelper.Mesh.Flatten < Flatten (Flattening two meshes together)
+ * BGHelper.Mesh < General Mesh-related code altering module (i.e. BGHelper.Mesh.GetDimensions)
 
-BGHelper.Light < Light handling (LightHelper) module
+ * BGHelper.Trail < LightTrail (waving scarves, trails behind moving objects, etc)
 
-BGHelper.API < BGE API improvement (BGEAPIPlus) module (works through modification of the built-in bge Python module)
+ * BGHelper.Wave < Waves (maybe)
 
+ * BGHelper.Sprite < Sprites (2D sprite animations)
+
+ * BGHelper.Flatten < Flatten (Flattening two meshes together)
+
+ * BGHelper.Light < Light handling (LightHelper) module
+
+ * BGHelper.API < BGE API improvement (BGEAPIPlus) module (works through modification of the built-in bge Python module simply on import)
 
 And so on with different features.
