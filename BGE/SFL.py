@@ -255,6 +255,34 @@ def Reduce(coloramt = 1.0):
 
 #def CRTScan(strength = 1.0, width = 1.0, quality = 0, scanstrength = 1.0):
 
+def Gameboy():
+	
+	filt = """
+		
+		uniform sampler2D bgl_RenderedTexture;
+	
+		void main(void)
+		{
+			vec4 color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
+			
+			float lum = max(max(color.r, color.g), color.b);
+			
+			if (lum > .75)
+				color = vec4(0.816, 0.9909, 0.0675, color.a);
+			else if (lum > .5)
+				color = vec4(0.542, 0.671, 0.05, color.a);
+			else if (lum > .25)
+				color = vec4(0.187, 0.382, 0.187, color.a);
+			else
+				color = vec4(0.058, 0.218, 0.058, color.a);
+			
+			gl_FragColor = color;
+		}
+			"""
+	
+	return filt
+
+
 def Scanlines(scandarkness = 0.0, scanwidth = 1.0, pixelcount = 4.0, samplesize = 1, scancontrast = 1.0):
 	
 	"""
@@ -589,7 +617,7 @@ def BloomOld(strength = 1.0, width = 1.0, quality = 0):
 	else:
 		return (bloomhigh)
 
-def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_num_y = 4):
+def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_num_y = 4, threshold = .5):
 	
 	bloom = """
 					
@@ -608,9 +636,9 @@ def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
 		
 		float luminance(vec3 rgb){
 		
-			const vec3 o = vec3(0.2125,  0.7154, 0.0721);
-			return dot(rgb, o);
-		
+			//const vec3 o = vec3(0.2125,  0.7154, 0.0721);
+			//return dot(rgb, o);
+			return max(max(rgb.r, rgb.b), rgb.b);
 		}
 
 		void main()
@@ -621,33 +649,38 @@ def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
 			
 			vec4 center = texture2D(bgl_RenderedTexture, texcoord);
 			
-			float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
-			float height = 0.002 * """ + str(float(height)) + """;  // height = how tall of a sample to use
-			
-			//width *= 1 - texture2D(bgl_LuminanceTexture, texcoord).r;
-			//height *= 1 - texture2D(bgl_LuminanceTexture, texcoord).r;
-			
 			int sample_num_x = """ + str(int(sample_num_x)) + """;
 			int sample_num_y = """ + str(int(sample_num_y)) + """;
+			
+			float width = 0.01 * """ + str(float(width)) + """ / sample_num_x;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
+			float height = 0.01 * """ + str(float(height)) + """ / sample_num_y;  // height = how tall of a sample to use
 			
 			vec2 tv;
 			float r;
 			
+			vec4 bloom_col;
+			
 			float d = 0.75;
 						
+			float threshold = """ + str(float(threshold)) + """;
+			
+			//r = d + (rand(texcoord.xy) * (1 - d));
+							
 			for (int i = -sample_num_x; i < sample_num_x; i++)
 			{
 				for (int j = -sample_num_y; j < sample_num_y; j++)
 				{
+
+					//tv.x = texcoord.x + (i * width * r);
+					//tv.y = texcoord.y + (j * height * r);
 					
-					r = d + (rand(texcoord.xy) * (1 - d));
+					tv.x = texcoord.x + (i*width);
+					tv.y = texcoord.y + (j*height);
+
+					bloom_col = texture2D(bgl_RenderedTexture, tv);
 					
-					
-					tv.x = texcoord.x + (i * width * r);
-					tv.y = texcoord.y + (j * height * r);	
-						
-				
-					sum += texture2D(bgl_RenderedTexture, tv);
+					if (luminance(bloom_col) > threshold)
+						sum += bloom_col;
 				}
 			}
 						
@@ -660,6 +693,8 @@ def Bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
 			bloom.a = 1.0;
 			
 			gl_FragColor = center + (bloom);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
+
+			// Adding in a threshold might be worth it, but it's a bit difficult to work with
 
 		}
 	"""

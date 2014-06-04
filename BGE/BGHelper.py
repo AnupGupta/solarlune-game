@@ -515,9 +515,9 @@ class CNodeMap(object):
 	"""
 	
 	# ~~ Helper classes ~~
-
+		
 	class CNode(object):
-	
+
 		"""
 		Internal helper node object. Use to find nodal neighbors.
 		"""
@@ -587,7 +587,7 @@ class CNodeMap(object):
 							
 							# if diff < anglimit[0] or md > anglimit[1]:
 								# angok = 0
-
+	
 						if test[0] == None:# and angok:
 						
 							diff = ListCom(ListAbs(ListSub(self.pos, node.pos)))
@@ -597,10 +597,10 @@ class CNodeMap(object):
 									node.links.append(self)
 								if node not in self.links:
 									self.links.append(node)
-
+	
 		def GetLinks(self):
 			return self.links
-					
+			
 	def __init__(self, ownerobj = None):
 	
 		self.nodes = []		# Nodes in your map
@@ -610,8 +610,6 @@ class CNodeMap(object):
 			self.ownerobj = logic.getCurrentController().owner
 		else:
 			self.ownerobj = ownerobj
-		
-		#self.debugcolor = RandomList([0.2, 0.2, 0.2, 1.0], [0.5, 0.5, 0.5, 1.0])[:3]				# Unique debug color for each node map
 		
 	# ~~ Path Handling ~~
 	
@@ -632,8 +630,10 @@ class CNodeMap(object):
 		"""
 		Construct a path from one point (start) to another (end).
 		
-		start and end should both be positions.
+		start and end = positions you want to navigate around / toward.
 		solidvar can be any string; used to check for the closest nodes from point to point.
+		instant = If it should go with the first node-path it finds.
+		shortcuts = If it should go for the starting node on the path, or any that are "further up" the path
 		
 		Returns the path to get from the start point to the end point. Use with a Navigate function
 		to move toward the end position.
@@ -723,120 +723,101 @@ class CNodeMap(object):
 	
 		for node in self.nodes:
 			node.parent = None	# Clear parent relationship after the path has been figured out
-
+			
 		if pathfound == 1:
+			
 			#self.path = path
 			return [path, 1]
 		else:
 			return [path, 0]			# The path was invalid
-		
-	def Navigate(self, path, ind, movespd = 0.1, linear = 1, zaxis = 1, obj = None, freq = None):
+			
+	def Navigate(self, path, obj = None, margin = 0.1, zaxis = 0, ind = None):
 	
 		"""
-		Moves the object obj on the path indictated from node to node. When a node has been reached, it moves
-		on to the next node in the path, if there is one.	
-		path = path list obtained from path calculation using the Calculate function.
-		ind = path index; a user (object) variable that starts at 0 and increases or decreases as the object moves along the nodes in the path.
-		linear = linear movement
-		zaxis = whether or not to move on the Z-axis
-		obj = what object to move; if left at None, it will use the script controller's object
 		
-		Returns a list consisting of the path index and if the path has been completed.
-		"""
-	
-		cont = logic.getCurrentController()
-	
-		if obj == None:
-			obj = cont.owner
-		
-		freq = cont.sensors[0].frequency + 1
-		
-		ret = [ind, 0]
-		
-		if ind >= 0 and ind <= len(path) - 1:
-		
-			if VecClose(obj.worldPosition, path[ind], zaxis, movespd * freq) == 1:
-			
-				if ind + 1 >= len(path):	# Path end
-				
-					ret[1] = 1
-				
-				else:
-				
-					ret[0] = ind + 1
-			else:
-			
-				p = path[ind]
-				op = obj.worldPosition
-			
-				if not zaxis:
-					moveto = mathutils.Vector([p[0] - op[0], p[1] - op[1], 0.0])
-				else:
-					moveto = mathutils.Vector([p[0] - op[0], p[1] - op[1], p[2] - op[2]])
-				
-				if linear:
-					moveto.magnitude = movespd * logic.getLogicTicRate()
-					moveto.z += obj.getLinearVelocity()[2]
-					obj.setLinearVelocity(moveto)
-				else:
-					moveto.magnitude = movespd * freq
-					obj.applyMovement(list(moveto))
-		
-		return ret
-		
-	def NavigateMS(self, path, ind, movespd = 0.1, obj = None, freq = None):
-	
-		"""
-		Returns the movement speed that the object obj should move on the path indictated from node to node.
 		When a node has been reached, it moves
 		on to the next node in the path, if there is one.	
 		path = path list obtained from path calculation using the Calculate function.
-		ind = path index; a user (object) variable that starts at 0 and increases or decreases as the object moves along the nodes in the path.
-		linear = linear movement
-		zaxis = whether or not to move on the Z-axis
-		obj = what object to move; if left at None, it will use the script controller's object
 		
-		Returns a list consisting of the path index and if the path has been completed.
+		path = the path the object should move on (gotten from the Calculate function)
+		obj = what object to move; if left at None, it will use the script controller's object
+		margin = how close an object can be to a node to "register"
+		zaxis = if an object should consider the Z-axis when checking to see if it's close to a node
+		ind = path index; if left to default (None), then the script will create a path index variable to keep track
+		of which node to move to next
+		
+		Returns a dictionary consisting of:
+		
+		"move_vect": The vector to get to the next node. 
+		"node_index": The "node index" that the object moving on the path is on,
+		"next_pos": The next node's position, and
+		"finished": If the object is finished traveling the path,
 		"""
 	
 		cont = logic.getCurrentController()
 	
 		if obj == None:
 			obj = cont.owner
+			
+		if not 'path_index' in obj: # Internal path movement variables
+			obj['path_index'] = 0
+		if not 'past_path' in obj:
+			obj['past_path'] = None
 		
+		if path != obj['past_path']: # Reset the path index if the path you're trying to navigate changes
+			obj['path_index'] = 0
+	
 		freq = cont.sensors[0].frequency + 1
 		
-		ret = [ind, 0, None]
-		
+		ret = {
+			
+			'move_vect':mathutils.Vector(),
+			'node_index':obj['path_index'],
+			'next_pos': mathutils.Vector(),		
+			'finished':0,
+			
+		}
+				
 		moveto = mathutils.Vector()
-		
-		if ind >= 0 and ind <= len(path) - 1:
 
-			if VecClose(obj.worldPosition, path[ind], 0, movespd * freq) == 1:
+		#if ind == None:
+		#	ind = obj['path_index']
 			
-				if ind + 1 >= len(path):	# Path end
-				
-					ret[1] = 1
-				
+		#next_node = 0
+			
+		#if ind >= 0 and ind <= len(path) - 1:
+
+		for x in range(len(path)-1, -1, -1):
+
+			if VecClose(obj.worldPosition, path[x], zaxis, margin) == 1:
+			
+				if x == len(path) - 1:	# Path end
+					
+					ret['finished'] = 1
+					
+					obj['path_index'] = x
+					
 				else:
-				
-					ret[0] = ind + 1
-			else:
-			
-				p = path[ind]
-				op = obj.worldPosition
-			
-				#if not zaxis:
-				#	moveto = mathutils.Vector([p[0] - op[0], p[1] - op[1], 0.0])
-				#else:
-				
-				moveto = mathutils.Vector([p[0] - op[0], p[1] - op[1], p[2] - op[2]])
-				
-				moveto.magnitude = movespd * logic.getLogicTicRate()
-				#moveto.z += obj.getLinearVelocity()[2]
 					
-		ret[2] = moveto
+					obj['path_index'] = x + 1
+		
+		if ind == None:
+			ind = obj['path_index']
+
+		p = path[ind]
+		op = obj.worldPosition
+	
+		moveto = mathutils.Vector([p[0] - op[0], p[1] - op[1], p[2] - op[2]])
+		
+		if obj['path_index'] < len(path) - 1:	
+			ret['next_pos'] = path[obj['path_index'] + 1]
+		else:
+			ret['next_pos'] = path[obj['path_index']]
+		
+		ret['move_vect'] = moveto
 					
+		obj['past_path'] = path
+		
 		return ret
 				
 	# ~~ Node handling ~~
@@ -942,8 +923,6 @@ class CNodeMap(object):
 					if obj.rayCast(pos, n[0].pos, 0, rayvar, 1, 1)[0] == None:
 						return n
 						
-					#print (obj.rayCast(pos, n[0].pos, 0, rayvar, 1, 1))
-					
 				return nodes[0]		# Found nodes, but no node has a clear shot to specified position, so just go for the closest one
 				
 			else:
@@ -1066,7 +1045,7 @@ class CNodeMap(object):
 			for n in range(len(path)):
 			
 				if n < len(path) - 1:
-			
+				
 					render.drawLine(path[n], path[n + 1], [1, 1, 0 ])
 	
 class CAStarPath(object):
@@ -3405,7 +3384,7 @@ def SoftBodyPin(softbodyobj, controls):
 			
 			constraints.createConstraint(softid, cid, ctype, vpos[0], vpos[1], vpos[2], 8, -1, 0.5)
 
-def GetDimensions(object = None, roundit = 3, offset = 1, meshnum = 0):
+def GetDimensions(object = None, roundit = 3, offset = 1, meshnum = 0, factor_in_scale = 1):
 
 	"""
 	Gets the dimensions of the object (what you see under dimensions in the properties window in the 3D menu).
@@ -3414,6 +3393,7 @@ def GetDimensions(object = None, roundit = 3, offset = 1, meshnum = 0):
 	offset = Whether or not to return the offset point of the dimensions (the center point);
 	This negated (-offset, literally) is the origin point, generally.
 	meshnum = The index of the mesh to use. Usually 0 is okay.
+	factor_in_scale = If it should multiply the dimensions by the object's world scale.
 	"""
 
 	if object == None:	
@@ -3453,18 +3433,24 @@ def GetDimensions(object = None, roundit = 3, offset = 1, meshnum = 0):
 			(verts[2][len(verts[2])-1] + verts[2][0]) / 2,
 			]
 	
-	if roundit >= 0:
-		size = [
-		round( (verts[0][len(verts[0]) - 1] - verts[0][0]) * s[0] , roundit),
-		round( (verts[1][len(verts[0]) - 1] - verts[1][0]) * s[1] , roundit),
-		round( (verts[2][len(verts[0]) - 1] - verts[2][0]) * s[2] , roundit) ]
-	else:
-		size = [(verts[0][len(verts[0]) - 1] - verts[0][0]) * s[0],
-		(verts[1][len(verts[0]) - 1] - verts[1][0]) * s[1],
-		(verts[2][len(verts[0]) - 1] - verts[2][0]) * s[2]]
-
-	#originpos = [0, 0, 0]
+	size = [(verts[0][len(verts[0]) - 1] - verts[0][0]),
+			(verts[1][len(verts[0]) - 1] - verts[1][0]),
+			(verts[2][len(verts[0]) - 1] - verts[2][0])]
 			
+	if factor_in_scale:
+		
+		size = [size[0] * s[0],
+		size[1] * s[1],
+		size[2] * s[2]]
+		
+	if roundit >= 0:
+		
+		size = [
+		round(size[0], roundit),
+		round(size[1], roundit),
+		round(size[2], roundit),		
+		]
+
 	if offset:
 		return (mathutils.Vector(size), mathutils.Vector(offsetpos))
 	
@@ -3664,14 +3650,16 @@ def Near(objpos = None, prop = '', mindist = 0, maxdist = 9999999, sort = 0, che
 	
 	return returnlist
 
-def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center = 1, dist=0, prop='', face=1, xray=1, poly = 0, obj = None, debug = 0, objdebug = None):
+def RayCastLine(anglevect, anglewidth, topos, frompos = None, raynum = 3,
+				center = 1, from_scalar = 1.0, to_scalar = 1.0, dist=0, prop='', face=1, xray=1,
+				poly = 0, obj = None, debug = False, objdebug = None):
 	
 	"""
 	Casts several rays in a line, starting from frompos and going to topos, and then iterating along the line indicated by anglevect.
 	
-	The function returns a list, consisting of three items:
+	The function returns a list, consisting of four items:
 	
-	1) The return of the raycasts (either a hit, or an empty list, depending on what the rays hit)
+	1) The return of the raycasts (either a hit, or an empty list, depending on what the rays hit; the output from a raycast() function, basically)
 	2) The ending position of the last successful raycast, or None if there wasn't a successful raycast
 	3) The starting position of the last successful raycast, or None if there wasn't a successful raycast
 	4) The offset between the starting point of the successful ray cast and the provided starting ray cast position. Useful in case
@@ -3687,6 +3675,8 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 	center = if the rays should be centered on the anglevect Vector or not
 	(i.e. treat frompos and topos as the center ray, or as the ray starting from anglevect)
 	
+	from / to_scalar = A percentage of the width to stretch (i.e. to have a wider end "edge" than starting "edge")
+
 	dist = distance of each raycast; defaults to 0, which equals the distance between the from position and end position of the vectors
 	
 	prop = property to check for with each raycast; defaults = '', which detects any object
@@ -3719,7 +3709,7 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 	
 	dist = 0.5 + abs(obj.worldLinearVelocity.z)
 	
-	ground = BGHelper.LineRayCast(obj.worldOrientation.col[0], width, topos, frompos, 3, 1, dist, 'ground', debug = 1)[0]
+	ground = BGHelper.RaycastLine(obj.worldOrientation.col[0], width, topos, frompos, 3, 1, dist, 'ground', debug = 1)[0]
 	
 	This will cast three rays in a straight line, with the center one being below the object's world position. Debug is on,
 	so it will draw the lines visibly onscreen (barring a bug with the render engine about drawing lines with overlay or
@@ -3748,14 +3738,17 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 	rfp = frompos.copy()
 	
 	rn = raynum - 1
+	
 	if rn <= 0:
 		rn = 1
 		
 	ray = [None]
 		
 	if center:
-		rtp -= anglevect / 2
-		rfp -= anglevect / 2
+		rtp -= (anglevect / 2) * to_scalar
+		rfp -= (anglevect / 2) * from_scalar
+
+	output = None
 	
 	for x in range(raynum):
 	
@@ -3788,13 +3781,26 @@ def LineRayCast(anglevect, anglewidth, topos, frompos = None, raynum = 3, center
 				db.color = [1, 0, 0, 1]
 								
 		if ray[0] != None:
-			return [ray, rtp, rfp, rfp - frompos]
-		
+			
+			if output == None:
+				output = [ray, rtp, rfp, rfp - frompos]
+			else:
+				
+				if (rfp - ray[1]).magnitude < (output[2] - output[0][1]).magnitude: # Only overwrite previous raycast results if this one is closer
+					output = [ray, rtp, rfp, rfp - frompos]
+			
 		av = anglevect / rn
 		
-		rtp += av
-		rfp += av
-							
+		rtp += av * to_scalar
+		rfp += av * from_scalar
+		
+		#if not converge:		
+		#	rfp += av
+		
+	if output:
+
+		return output
+	
 	return [ray, None, None, None]
 		
 def RayCastList(topos, frompos, prop = None, face = 0, xray = 1):
