@@ -74,7 +74,7 @@ def get_shared_vertices(mesh, vert, max_diff = 0, mat = 0):
     return list
 
 
-def softbody_pin(softbodyobj, controls):
+def soft_body_pin(softbodyobj, controls):
 
     """
     Pins the soft body object to an object using its vertices (a control object). It will pin the soft-body
