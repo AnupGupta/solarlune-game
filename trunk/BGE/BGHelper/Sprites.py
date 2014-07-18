@@ -18,13 +18,12 @@ P.S. It would be nice if you could attribute me for the creation of this and my 
 
 __author__ = 'SolarLune'
 
-from bge import logic
-
 import math
+
+from bge import logic
 
 
 class _spritemap_base():
-
     def __init__(self, obj):
 
         """
@@ -44,7 +43,7 @@ class _spritemap_base():
         # average frame-rate)
 
         self.adjust_by_sensor_frequency = True  # Attempts to take into account the first sensor's frequency when
-        #animating
+        # animating
 
         self.anim_dict = {}
 
@@ -67,7 +66,7 @@ class _spritemap_base():
         Registers the animation specified to the SpriteMap.
         """
 
-        self.anim_dict[anim_name] = {'animation':animation, 'fps':fps, 'loop':loop}
+        self.anim_dict[anim_name] = {'animation': animation, 'fps': fps, 'loop': loop}
 
     def remove(self, anim_name):
         """
@@ -183,10 +182,9 @@ class _spritemap_base():
 
         if self.current_animation != self.prev_animation:
 
-            self.on_animation_change(self, self.current_animation, self.prev_animation) # Callback
+            self.on_animation_change(self, self.current_animation, self.prev_animation)  # Callback
 
             if reset_subimage_on_change:
-
                 self.subimage = 1.0
 
         if self.adjust_by_sensor_frequency:
@@ -211,7 +209,6 @@ class _spritemap_base():
             if len(anim) > 2:  # Don't advance if there's only one cell to the animation
 
                 if target_fps != 0.0:
-
                     self.subimage += round(target_fps, 2) * freq
 
             subi = round(self.subimage, 4)
@@ -226,12 +223,10 @@ class _spritemap_base():
                 if len(anim) >= 2:
 
                     while math.floor(subi) > len(anim) - 1:
-
                         subi -= len(anim) - 1
                         fin = 1
 
                     while math.floor(subi) < 1.0:
-
                         subi += len(anim) - 1
                         fin = 1
 
@@ -245,7 +240,6 @@ class _spritemap_base():
                 if subi >= len(anim) - 1 or subi < 1.0:
 
                     if self.is_playing:
-
                         self.on_animation_finished(self)  # Animation's finished because it's at the end of a
                         # non-looping animation
 
@@ -257,7 +251,6 @@ class _spritemap_base():
                     self.is_playing = False
 
             if math.floor(subi) != math.floor(self.prev_subimage):
-
                 self.on_subimage_change(self, math.floor(subi), math.floor(self.prev_subimage))
                 # Callback for subimage change
 
@@ -289,7 +282,7 @@ class _spritemap_base():
 
         return len(self.anim_dict[anim_name]['animation']) - 1
 
-#  CALLBACKS
+    # CALLBACKS
 
     def on_subimage_change(self, sprite_map, current_subimage, prev_subimage):
 
@@ -334,7 +327,6 @@ class _spritemap_base():
 
 
 class SpriteMapUV(_spritemap_base):
-
     def __init__(self, obj):
 
         """
@@ -357,13 +349,11 @@ class SpriteMapUV(_spritemap_base):
             for mat in range(len(mesh.materials)):
 
                 for v in range(mesh.getVertexArrayLength(mat)):
-
                     self.vertices.append(mesh.getVertex(mat, v))  # For UV animation
 
         uvs = []
 
         for v in self.vertices:
-
             uv = v.getUV()
 
             uvs.append([v, uv.x + uv.y])
@@ -376,8 +366,7 @@ class SpriteMapUV(_spritemap_base):
         self.offset = {}
 
         for vert in self.vertices:
-
-            self.offset[vert] = vert.getUV() - uvs[0][0].getUV() # The offset from the bottom-left vertex
+            self.offset[vert] = vert.getUV() - uvs[0][0].getUV()  # The offset from the bottom-left vertex
 
     def play(self, anim_name, reset_subimage_on_change=True):
 
@@ -391,14 +380,13 @@ class SpriteMapUV(_spritemap_base):
         subi = math.floor(self.subimage)
 
         for vert in self.vertices:
-
-            vert.setUV([self.offset[vert].x + (self.uv_size[0] * anim[0]), self.offset[vert].y + (self.uv_size[1] * anim[subi])])
+            vert.setUV([self.offset[vert].x + (self.uv_size[0] * anim[0]),
+                        self.offset[vert].y + (self.uv_size[1] * anim[subi])])
 
         return True
 
 
 class SpriteMapMesh(_spritemap_base):
-
     def __init__(self, obj):
 
         """
@@ -430,7 +418,6 @@ class SpriteMapMesh(_spritemap_base):
         anim_cell = anim[0] + str(anim[subi])
 
         if self.obj.meshes[0].name != anim_cell:
-
             self.obj.replaceMesh(anim_cell)
 
         return True

@@ -1,5 +1,4 @@
-
-import math, mathutils
+import mathutils
 
 from bge import logic, render
 
@@ -38,7 +37,6 @@ def Sign(value):
 def RayCastLine(anglevect, anglewidth, topos, frompos=None, raynum=3,
                 center=1, from_scalar=1.0, to_scalar=1.0, dist=0, prop='', face=1, xray=1,
                 poly=0, obj=None, debug=False, objdebug=None):
-
     """
     Casts several rays in a line, starting from frompos and going to topos, and then iterating along the line indicated by anglevect.
 
@@ -109,7 +107,7 @@ def RayCastLine(anglevect, anglewidth, topos, frompos=None, raynum=3,
     anglevect = anglevect.copy()
     anglevect.magnitude = anglewidth
 
-    if obj is  None:
+    if obj is None:
         obj = logic.getCurrentController().owner
     if frompos is None:
         frompos = obj.worldPosition.copy()
@@ -186,11 +184,10 @@ def RayCastLine(anglevect, anglewidth, topos, frompos=None, raynum=3,
         rtp += av * to_scalar
         rfp += av * from_scalar
 
-        #if not converge:
+        # if not converge:
         #	rfp += av
 
     if output:
-
         return output
 
-    return {'rays':ray, 'ray_start':None, 'ray_end':None, 'offset':None}
+    return {'rays': ray, 'ray_start': None, 'ray_end': None, 'offset': None}

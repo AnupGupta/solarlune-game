@@ -17,14 +17,15 @@ P.S. It would be nice if you could attribute me for the creation of this and my 
 """
 
 from . import API
+from . import Audio
 from . import Filters
+from . import Game
 from . import Input
 from . import Light
-from . import Trail
 from . import Math
 from . import Mesh
 from . import RLG
-from . import Audio
 from . import Sprites
+from . import Trail
 from . import Viewport
 from . import Window

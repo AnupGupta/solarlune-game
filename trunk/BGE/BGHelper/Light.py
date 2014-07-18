@@ -138,7 +138,7 @@ def add_light(light_type=LT_POINT, time=0, priority=0):
 
         logic.lights_used = {
             # 'Point':{},
-            #'Sun':{},
+            # 'Sun':{},
             #'Hemi':{},
             #'Spot':{},
         }  # Create a mapping of lamps with their types to spawners
