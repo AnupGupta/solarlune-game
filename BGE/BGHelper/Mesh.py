@@ -16,25 +16,218 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 P.S. It would be nice if you could attribute me for the creation of this and my other scripts. Thanks!
 """
 
-from bge import logic, constraints
+import math
+import time
+import collections
+import operator
 
-import math, mathutils, time
+from bge import logic, constraints, types, render
+import mathutils
+
+from .Math import Sign
+
+lib_new_counter = 0
+
+# Helper classes
+
+
+class CPolygon():
+
+    def __init__(self, polygon):
+
+        self.poly_data = polygon
+        self.vertices = []
+        self.neighbors = {}
+        self.vertices_original_positions = []
+
+        verts = [polygon.v1, polygon.v2, polygon.v3]
+
+        if self.poly_data.getNumVertex() == 4:
+
+            verts.append(polygon.v4)
+
+        for v in verts:
+
+            vert = self.poly_data.getMesh().getVertex(self.poly_data.material_id, v)
+
+            self.vertices.append(vert)
+            self.vertices_original_positions.append(vert.getXYZ())
+
+    def get_normal(self):
+
+        n = mathutils.Vector()
+
+        for vert in self.vertices:
+
+            n += vert.normal
+
+        n.normalize()
+
+        return n
+
+    def get_position(self):
+
+        pos = mathutils.Vector()
+
+        for vert in self.vertices:
+
+            pos += vert.XYZ
+
+        pos /= len(self.vertices)
+
+        return pos
+
+    normal = property(get_normal)
+    position = property(get_position)
+
+
+class CMesh():
+
+    def __init__(self, mesh_data):
+
+        # TODO BGE MESH DATA TO CPOLYGON (look through list to find it)
+        # TODO Shared vertices - just use polygons_dict to get neighboring polygons
+
+        self.mesh_data = mesh_data
+
+        self.polygon_dict = collections.OrderedDict()
+        self.polygon_list = []
+
+        polies_dict = {}
+        polies_list = {}
+
+        for p in range(self.mesh_data.numPolygons):
+
+            poly = CPolygon(self.mesh_data.getPolygon(p))
+
+            rpos_x = poly.position.x
+            rpos_y = poly.position.y
+            rpos_z = poly.position.z
+
+            position_tuple = (rpos_z, rpos_y, rpos_x)
+
+            polies_list[position_tuple] = poly
+
+            if not rpos_z in polies_dict:
+                polies_dict[rpos_z] = {}
+            if not rpos_y in polies_dict[rpos_z]:
+                polies_dict[rpos_z][rpos_y] = {}
+
+            polies_dict[rpos_z][rpos_y][rpos_x] = poly
+
+        for kvz in sorted(polies_dict):
+
+            self.polygon_dict[kvz] = collections.OrderedDict()
+
+            for kvy in sorted(polies_dict[kvz]):
+
+                self.polygon_dict[kvz][kvy] = collections.OrderedDict()
+
+                for kvx in sorted(polies_dict[kvz][kvy]):
+
+                    self.polygon_dict[kvz][kvy][kvx] = polies_dict[kvz][kvy][kvx]
+
+        polies_sorted = sorted(polies_list.items(), key=lambda x: x[0])
+
+        for p in polies_sorted:
+
+            self.polygon_list.append(p[1])
+
+        self.vertices = []
+
+        for polygon in self.polygon_list:
+
+            for vertex in polygon.vertices:
+
+                self.vertices.append(vertex)
+
+        self.shared_vertices = {}
+
+    def get_shared_vertices(self):
+
+        """
+        Separate function because this could be slow given enough vertices.
+        :return:
+        """
+
+        clone_verts = []
+
+        for v1 in self.vertices:
+
+            if not v1 in clone_verts:
+
+                for v2 in self.vertices:
+
+                    if v1 != v2:
+
+                        if self.vertices_close(v1, v2):
+
+                            if not v1 in self.shared_vertices:
+
+                                self.shared_vertices[v1] = []
+
+                            self.shared_vertices[v1].append(v2)
+
+                            clone_verts.append(v2)
+
+    def get_polygon_neighbors(self, minimum_shared_vertices = 0):
+
+        """
+        Separate function because this could be slow given enough faces.
+        :param poly:
+        :return:
+        """
+
+        neighbors = {}
+
+        for poly in self.polygon_dict:
+
+            for other_poly in self.polygon_dict:
+
+                if poly != other_poly:
+
+                    shared_vert_count = 0
+
+                    for v1 in poly.vertices:
+
+                        for v2 in other_poly.vertices:
+
+                            if self.vertices_close(v1, v2):
+
+                                shared_vert_count += 1
+
+                                if shared_vert_count >= minimum_shared_vertices:
+
+                                    poly.neighbors[tuple((other_poly.position - poly.position).normalized())] = other_poly
+                                    other_poly.neighbors[tuple((poly.position - other_poly.position).normalized())] = poly
+
+    def vertices_close(self, vertex_one, vertex_two, margin=0.001):
+
+        return (vertex_one.getXYZ() - vertex_two.getXYZ()).magnitude < margin
 
 
 def make_unique_mesh(mesh):
 
-    if not hasattr(logic, 'lib_new_counter'):
+    global lib_new_counter
 
-        logic.lib_new_counter = 0
+    if isinstance(mesh, types.KX_MeshProxy):
 
-    newmesh = logic.LibNew(mesh + str(logic.lib_new_counter), 'Mesh', [mesh])[0]
+        mesh = mesh.name
 
-    logic.lib_new_counter += 1
+    newmesh = logic.LibNew(mesh + str(lib_new_counter), 'Mesh', [mesh])[0]
+
+    lib_new_counter += 1
 
     return newmesh
 
 
 def get_all_vertices(o):
+
+    """
+    Returns all vertices from all meshes in the object.
+    :param o:KX_GameObject - The object to get the vertices from.
+    :return: A list of vertices (KX_VertexProxy).
+    """
 
     verts = []
 
@@ -49,8 +242,7 @@ def get_all_vertices(o):
     return verts
 
 
-def get_shared_vertices(mesh, vert, max_diff = 0, mat = 0):
-
+def get_shared_vertices(mesh, vert, max_diff=0, mat=0):
     """Returns the vertices sharing the position occupied by the vertex 'vert'.
     'mesh' = which object's vertices to check;
     'vert' = which vertex to find the duplicates of
@@ -75,7 +267,6 @@ def get_shared_vertices(mesh, vert, max_diff = 0, mat = 0):
 
 
 def soft_body_pin(softbodyobj, controls):
-
     """
     Pins the soft body object to an object using its vertices (a control object). It will pin the soft-body
     object to all of the vertices of all of the objects in the controls list. So, for controls pass a list like:
@@ -86,21 +277,19 @@ def soft_body_pin(softbodyobj, controls):
     """
 
     softid = softbodyobj.getPhysicsId()
-    ctype = 2 # Constraint type, 1 = edge; 0 = point, 2 = angular?
+    ctype = 2  # Constraint type, 1 = edge; 0 = point, 2 = angular?
 
     for c in controls:
 
         cid = c.getPhysicsId()
 
         for vert in range(c.meshes[0].getVertexArrayLength(0)):
-
             vpos = c.meshes[0].getVertex(0, vert).getXYZ()
 
             constraints.createConstraint(softid, cid, ctype, vpos[0], vpos[1], vpos[2], 8, -1, 0.5)
 
 
-def get_dimensions(object = None, roundit = 3, offset = 1, meshnum = 0, factor_in_scale = 1):
-
+def get_dimensions(object=None, roundit=3, offset=1, meshnum=0, factor_in_scale=1):
     """
     Gets the dimensions of the object (what you see under dimensions in the properties window in the 3D menu).
     mesh = which mesh to use to get the object's dimensions.
@@ -118,7 +307,7 @@ def get_dimensions(object = None, roundit = 3, offset = 1, meshnum = 0, factor_i
 
     mesh = object.meshes[meshnum]
 
-    #print (dir(mesh))
+    # print (dir(mesh))
 
     verts = [[], [], []]
 
@@ -127,7 +316,6 @@ def get_dimensions(object = None, roundit = 3, offset = 1, meshnum = 0, factor_i
     for mat in range(len(mesh.materials)):
 
         for v in range(mesh.getVertexArrayLength(mat)):
-
             vert = mesh.getVertex(mat, v)
 
             pos = vert.getXYZ()
@@ -141,29 +329,26 @@ def get_dimensions(object = None, roundit = 3, offset = 1, meshnum = 0, factor_i
     verts[2].sort()
 
     if offset != 0:
-
         offsetpos = [
-            (verts[0][len(verts[0])-1] + verts[0][0]) / 2,
-            (verts[1][len(verts[1])-1] + verts[1][0]) / 2,
-            (verts[2][len(verts[2])-1] + verts[2][0]) / 2,
-            ]
+            (verts[0][len(verts[0]) - 1] + verts[0][0]) / 2,
+            (verts[1][len(verts[1]) - 1] + verts[1][0]) / 2,
+            (verts[2][len(verts[2]) - 1] + verts[2][0]) / 2,
+        ]
 
     size = [(verts[0][len(verts[0]) - 1] - verts[0][0]),
             (verts[1][len(verts[0]) - 1] - verts[1][0]),
             (verts[2][len(verts[0]) - 1] - verts[2][0])]
 
     if factor_in_scale:
-
         size = [size[0] * s[0],
-        size[1] * s[1],
-        size[2] * s[2]]
+                size[1] * s[1],
+                size[2] * s[2]]
 
     if roundit >= 0:
-
         size = [
-        round(size[0], roundit),
-        round(size[1], roundit),
-        round(size[2], roundit),
+            round(size[0], roundit),
+            round(size[1], roundit),
+            round(size[2], roundit),
         ]
 
     if offset:
@@ -173,7 +358,7 @@ def get_dimensions(object = None, roundit = 3, offset = 1, meshnum = 0, factor_i
         return (mathutils.Vector(size), None)
 
 
-def uv_scroll(uspd = 0.0025, vspd = 0.0, layer = 0, mesh = None, mat = 0, freqstretch = 1):
+def uv_scroll(uspd=0.0025, vspd=0.0, layer=0, mesh=None, mat=0, freqstretch=1):
     """
     Scrolls the UV Coordinate of each vertex in the specified mesh by
     uspd and vspd.
@@ -210,11 +395,11 @@ def uv_scroll(uspd = 0.0025, vspd = 0.0, layer = 0, mesh = None, mat = 0, freqst
             vert.u2 += uspd * f
             vert.v2 += vspd * f
 
+
 # Flattening meshes together
 
 
 def flatten(destination, sources):
-
     """
     Author: SolarLune
     Date Updated: 3/11/13
@@ -266,7 +451,7 @@ def flatten(destination, sources):
     vertindex = 0
     objverts = {}
 
-    nomore = 0	# All through with objects?
+    nomore = 0  # All through with objects?
 
     mesh = destination.meshes[0]
     lp = destination.worldPosition.copy()
@@ -281,10 +466,9 @@ def flatten(destination, sources):
         destination['vertsavailable'] = {}
 
         for m in range(mesh.numMaterials):
-
             destination['vertsavailable'][m] = [1 for x in range(mesh.getVertexArrayLength(m))]
 
-        UnflattenAll(destination)
+        unflatten_all(destination)
 
     for m in range(mesh.numMaterials):
 
@@ -311,20 +495,21 @@ def flatten(destination, sources):
                 vert.y *= targetobj.worldScale.y
                 vert.z *= targetobj.worldScale.z
 
-                vert.XYZ += (op - lp)		# Set each vertex of the source mesh to match one of the target objects'
-                vert.UV = tv.UV						# Mesh vertex position, UV, and normal properties, offset by the target
-                vert.normal = tv.normal				# objects' world positions and the local mesh's world position (because all
-                vert.color = tv.color					# of the vertices belong to the local mesh
+                vert.XYZ += (op - lp)  # Set each vertex of the source mesh to match one of the target objects'
+                vert.UV = tv.UV  # Mesh vertex position, UV, and normal properties, offset by the target
+                vert.normal = tv.normal  # objects' world positions and the local mesh's world position (because all
+                vert.color = tv.color  # of the vertices belong to the local mesh
 
                 vertindex += 1
 
                 try:
-                    objverts[m].append(v)		# Append the vertex for the material index to the dictionary of verts used for the object
+                    objverts[m].append(
+                        v)  # Append the vertex for the material index to the dictionary of verts used for the object
                 except KeyError:
                     objverts[m] = []
                     objverts[m].append(v)
 
-                if vertindex >= vl:	# If there's no more vertices for the current object, move to the next one
+                if vertindex >= vl:  # If there's no more vertices for the current object, move to the next one
                     vertindex = 0
                     objindex += 1
                     allobjverts.append(objverts)
@@ -343,7 +528,6 @@ def flatten(destination, sources):
 
 
 def unflatten(destination, verts):
-
     """
     "Removes" the vertices from the flattened mesh.
 
@@ -354,7 +538,6 @@ def unflatten(destination, verts):
     for m in verts:
 
         for v in verts[m]:
-
             vert = destination.meshes[0].getVertex(m, v)
 
             vert.setXYZ([0, 0, 0])
@@ -363,7 +546,6 @@ def unflatten(destination, verts):
 
 
 def unflatten_all(destination):
-
     """
     Unflattens all vertices from the destination object.
     """
@@ -373,18 +555,18 @@ def unflatten_all(destination):
     for m in range(mesh.numMaterials):
 
         for v in range(mesh.getVertexArrayLength(m)):
-
             vert = destination.meshes[0].getVertex(m, v)
 
             vert.setXYZ([0, 0, 0])
 
             destination['vertsavailable'][m][v] = 1
 
+
+
 # Waves
 
 
-def wave_planar(wave_num = 1, wave_rate_x = 1, wave_rate_y = 1, wave_height = 1.0, scale_color = 0, only_color = 1, obj = None):
-
+def wave_planar(wave_num=1, wave_rate_x=1, wave_rate_y=1, wave_height=1.0, scale_color=0, only_color=1, obj=None):
     """
 
     Moves the vertices of the mesh around to give a waving effect.
@@ -409,7 +591,7 @@ def wave_planar(wave_num = 1, wave_rate_x = 1, wave_rate_y = 1, wave_height = 1.
 
     """
 
-    if obj == None:
+    if obj is None:
 
         o = logic.getCurrentController().owner
 
@@ -423,15 +605,15 @@ def wave_planar(wave_num = 1, wave_rate_x = 1, wave_rate_y = 1, wave_height = 1.
 
         o['wave_planar_info']['verts'] = {}
 
-        o['wave_planar_info']['dimensions'] = GetDimensions(o, factor_in_scale = 0)[0]
+        o['wave_planar_info']['dimensions'] = get_dimensions(o, factor_in_scale=0)[0]
 
-        for vert in GetAllVertices(o):
+        for vert in get_all_vertices(o):
 
             if only_color:
 
                 if vert.r > 0.5:
-
-                    o['wave_planar_info']['verts'][vert] = vert.getXYZ() # Only add the vertex to the list if it's red (cuts down processing)
+                    o['wave_planar_info']['verts'][
+                        vert] = vert.getXYZ()  # Only add the vertex to the list if it's red (cuts down processing)
 
             else:
 
@@ -446,10 +628,9 @@ def wave_planar(wave_num = 1, wave_rate_x = 1, wave_rate_y = 1, wave_height = 1.
     twrx = t * wave_rate_x
     twry = t * wave_rate_y
 
-    if not scale_color: # Moving these if blocks outside of the vertex changes
+    if not scale_color:  # Moving these if blocks outside of the vertex changes
 
         for vert in o['wave_planar_info']['verts']:
-
             osc_time_x = (twrx + ((vert.x / d.x) * wave_num)) * math.pi
             osc_time_y = (twry + ((vert.y / d.y) * wave_num)) * math.pi
 
@@ -457,10 +638,9 @@ def wave_planar(wave_num = 1, wave_rate_x = 1, wave_rate_y = 1, wave_height = 1.
 
             vert.z = o['wave_planar_info']['verts'][vert].z + wave
 
-    elif scale_color == 1: # Scale wave by vertex color
+    elif scale_color == 1:  # Scale wave by vertex color
 
         for vert in o['wave_planar_info']['verts']:
-
             osc_time_x = (twrx + ((vert.x / d.x) * wave_num)) * math.pi
             osc_time_y = (twry + ((vert.y / d.y) * wave_num)) * math.pi
 
@@ -470,7 +650,7 @@ def wave_planar(wave_num = 1, wave_rate_x = 1, wave_rate_y = 1, wave_height = 1.
 
             vert.z = o['wave_planar_info']['verts'][vert].z + wave
 
-    else: # Scale wave by vertex color (binarily)
+    else:  # Scale wave by vertex color (binarily)
 
         for vert in o['wave_planar_info']['verts']:
 

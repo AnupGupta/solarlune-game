@@ -1,6 +1,6 @@
-from bge import logic
-
 import math
+
+from bge import logic
 
 """
 Copyright (c) 2013-2014 SolarLune
@@ -43,12 +43,12 @@ Check the BGInput example to see how it works.
 
 # Input constants
 
-KEY = 0             # Different input types; Keyboard key
-JOYBUTTON = 1       # Joystick button
-JOYHAT = 2          # Joystick hat (D-Pad on a lot of controllers)
-JOYAXIS = 3         # Joystick axes (sticks and triggers on a 360 controller)
-MOUSEAXIS = 4       # Mouse movement axes
-MOUSEBUTTON = 5     # Mouse button
+KEY = 0  # Different input types; Keyboard key
+JOYBUTTON = 1  # Joystick button
+JOYHAT = 2  # Joystick hat (D-Pad on a lot of controllers)
+JOYAXIS = 3  # Joystick axes (sticks and triggers on a 360 controller)
+MOUSEAXIS = 4  # Mouse movement axes
+MOUSEBUTTON = 5  # Mouse button
 
 STATE_UP = 0
 STATE_PRESSED = 1
@@ -61,7 +61,6 @@ STATE_RELEASED = 3
 
 
 class _JP_GameCubeUSB():
-
     """
     Joystick profile for a GameCube controller connected via a USB adapter.
     Interestingly, the D-Pad can be detected as either buttons (the "Pad" ones below), or a standard Hat hat
@@ -81,7 +80,7 @@ class _JP_GameCubeUSB():
 
     Start = 9
 
-    Pad_Up = 12		# D-pad registers as buttons and a hat, for some reason
+    Pad_Up = 12  # D-pad registers as buttons and a hat, for some reason
     Pad_Right = 13
     Pad_Down = 14
     Pad_Left = 15
@@ -99,11 +98,11 @@ class _JP_GameCubeUSB():
     Trigger_Right = 4
     Trigger_Left = 5
 
+
 JPGamecubeUSB = _JP_GameCubeUSB()
 
 
 class _JP_PS2USB():
-
     """
     Joystick profile for a PS2 controller connected via a USB adapter.
     """
@@ -133,11 +132,11 @@ class _JP_PS2USB():
     Stick_RightHori = 3
     Stick_RightVert = 2
 
+
 JPPS2USB = _JP_PS2USB
 
 
 class _JP_Chillstream():
-
     """
     Joystick profile for a Logitech Chillstream controller.
     """
@@ -167,11 +166,11 @@ class _JP_Chillstream():
     Stick_RightHori = 2
     Stick_RightVert = 3
 
+
 JPChillstream = _JP_Chillstream
 
 
 class _JP_Xbox360():
-
     """
     Joystick profile for an XBOX 360 or otherwise X-Input controller.
 
@@ -207,45 +206,46 @@ class _JP_Xbox360():
 
     Triggers = 2
 
+
 JPXbox360 = _JP_Xbox360()
 
 
 # Input classes
 
 class CInputKey():
-
     """
     Tests for input from keyboard and joystick.
     """
 
-    def __init__(self, inputtype, keycode, axisdirection = 1, deadzone = 0.1, joyindex = 0, scalar = 1.0):
+    def __init__(self, inputtype, keycode, axisdirection=1, deadzone=0.1, joyindex=0, scalar=1.0):
 
         """
         A input handling object.
 
         inputtype = input type from CInputKey (CInputKey.KEYDOWN, for example)
-        keycode = key, axis, hat, or button code for the input device (for example, events.XKEY, 5 for the fifth button on a joystick, etc.)
+        keycode = key, axis, hat, or button code for the input device (for example, events.XKEY, 5 for the fifth button
+        on a joystick, etc.)
         axisdirection = direction to check for axis values for joystick and mouse axis checks.
         deadzone = percentage to disregard joystick movement.
         joyindex = joystick index to check.
-        scalar = how large the end number is. Defaults to 1.0. This is useful to make corresponding inputs match up (i.e. make
-        the mouse move at the same rate as the right analog stick).
+        scalar = how large the end number is. Defaults to 1.0. This is useful to make corresponding inputs match up
+        (i.e. make the mouse move at the same rate as the right analog stick).
         """
 
         self.inputtype = inputtype
         self.keycode = keycode
 
         self.prevstate = 0
-        self.prevpos = [0.0, 0.0]                       # Previous position of the mouse
+        self.prevpos = [0.0, 0.0]  # Previous position of the mouse
         self.active = 0.0
-        self.state = STATE_UP                       # The state of the key input (just pressed, released, down, up, etc.)
+        self.state = STATE_UP  # The state of the key input (just pressed, released, down, up, etc.)
 
         self.scalar = scalar
-        self.axisdirection = axisdirection      # Default for axis checking
-        self.deadzone = deadzone                # Deadzone amount for axis checking
-        self.joyindex = joyindex                    # Defaults to the first one
+        self.axisdirection = axisdirection  # Default for axis checking
+        self.deadzone = deadzone  # Deadzone amount for axis checking
+        self.joyindex = joyindex  # Defaults to the first one
 
-    def Poll(self):
+    def poll(self):
 
         """
         Polls the input to check whether it's active or not.
@@ -289,7 +289,7 @@ class CInputKey():
 
                 self.active = 0.0
 
-        elif joy != None:
+        elif joy is not None:
 
             if self.inputtype == JOYBUTTON:
 
@@ -303,7 +303,7 @@ class CInputKey():
 
             elif self.inputtype == JOYHAT:
 
-                hat = joy.hatValues[0] # TODO: Expand this to fit more than one hat
+                hat = joy.hatValues[0]  # TODO: Expand this to fit more than one hat
 
                 if hat & self.keycode:
 
@@ -347,34 +347,35 @@ class CInputKey():
 
 
 class CInputDevice():
-
     """
-    A class for testing for input from different devices. Useful if you want to easily set up different bindings for your input.
+    A class for testing for input from different devices. Useful if you want to easily set up different bindings
+    for your input.
 
-    Basically, you add the inputs via their inputtype (retrieved from CInputKey's input type constant definitions) with the
-    keycode that you need.
+    Basically, you add the inputs via their inputtype (retrieved from CInputKey's input type constant definitions)
+    with the keycode that you need.
 
     You can also specify a group for each binding entry (i.e. you can add keyboard and joystick controls separately.)
 
     Then, you poll the device with the group that you specify (so you can easily switch between key setups, and so it
     won't matter which device you use).
 
-    Finally, you can easily retrieve the key / button / axis being pressed by just checking the device's events dictionary:
+    Finally, you can easily retrieve the key / button / axis being pressed by just checking the device's events
+    dictionary:
 
     -------------
 
     device = CInputDevice()
 
-    device.Add('jump', KEYPRESSED, events.ZKEY, 'keyboard')
+    device.add('jump', KEY, events.ZKEY, 'keyboard')
 
-    device.Poll('keyboard')
+    device.poll('keyboard')
 
-    print (device.BindDown('jump'))
+    print (device.bind_down('jump'))
 
     -------------
 
-    Note that you can also not specify a group if you want all input devices to work at the same time (i.e. use the joystick
-    or the keyboard at the same time.)
+    Note that you can also not specify a group if you want all input devices to work at the same time
+    (i.e. use the joystick or the keyboard at the same time.)
 
     """
 
@@ -395,9 +396,9 @@ class CInputDevice():
 
         self.events = {}
         self.bindings = {}
-        self.states = {} # The states of individual bindings (seemed easier than having to use bindings['active'] and bindings['state'])
+        self.states = {}  # The states of individual bindings (seemed easier than having to use bindings['active'] and bindings['state'])
 
-    def Add(self, bindingname, inputtype, keycode, axisdir = 1, deadzone = 0.1, joyindex = 0, scalar = 1.0, group = "default"):
+    def add(self, bindingname, inputtype, keycode, axisdir=1, deadzone=0.1, joyindex=0, scalar=1.0, group="default"):
 
         """
         Add a key binding.
@@ -418,22 +419,20 @@ class CInputDevice():
         """
 
         if not group in self.events:
-
             self.events[group] = {}
 
         if not bindingname in self.events[group]:
+            # if not group in self.events:        # Set up the events dictionary
 
-            #if not group in self.events:        # Set up the events dictionary
-
-            #    self.events[group] = {}
+            # self.events[group] = {}
 
             self.events[group][bindingname] = []
 
-            self.bindings[bindingname] = {'active':0.0, 'type':KEY, 'state':0}
+            self.bindings[bindingname] = {'active': 0.0, 'type': KEY, 'state': 0}
 
         self.events[group][bindingname].append(CInputKey(inputtype, keycode, axisdir, deadzone, joyindex, scalar))
 
-    def Poll(self, group = None):
+    def poll(self, group=None):
 
         """
         Poll the bindings for updates.
@@ -442,7 +441,7 @@ class CInputDevice():
         If you specify, then it will poll that one in particular. Useful for switching input schemes.
         """
 
-        if group == None:
+        if group is None:
 
             poll_groups = [gr for gr in self.events]
 
@@ -454,23 +453,23 @@ class CInputDevice():
 
             for binding in self.events[group]:
 
-                self.bindings[binding] = {'active':0.0, 'type':None, 'state':0}
+                self.bindings[binding] = {'active': 0.0, 'type': None, 'state': 0}
 
-                for input in self.events[group][binding]:
+                for input_o in self.events[group][binding]:
 
-                    input.Poll()
+                    input_o.poll()
 
-                    if input.active:
+                    if input_o.active:
 
-                        self.bindings[binding] = {'active':input.active, 'state':input.state, 'type':input.inputtype}
+                        self.bindings[binding] = {'active': input_o.active, 'state': input_o.state,
+                                                  'type': input_o.inputtype}
 
                     else:
 
-                        if input.state == STATE_RELEASED:
+                        if input_o.state == STATE_RELEASED:
+                            self.bindings[binding]['state'] = input_o.state
 
-                            self.bindings[binding]['state'] = input.state
-
-    def TypeActive(self, input_type):
+    def type_active(self, input_type):
 
         """
         Checks to see if a certain kind of input type is active.
@@ -479,12 +478,11 @@ class CInputDevice():
         for b in self.bindings:
 
             if self.bindings[b]['type'] == input_type and self.bindings[b]['active']:
-
                 return 1
 
         return 0
 
-    def BindDown(self, bind):
+    def bind_down(self, bind):
         """
         Checks to see if the binding you specify is activated currently (down).
 
@@ -493,7 +491,7 @@ class CInputDevice():
 
         return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_DOWN else 0.0
 
-    def BindPressed(self, bind):
+    def bind_pressed(self, bind):
         """
         Checks to see if the binding you specify was just pressed this frame.
 
@@ -501,7 +499,7 @@ class CInputDevice():
         """
         return self.bindings[bind]['active'] if self.bindings[bind]['state'] == STATE_PRESSED else 0.0
 
-    def BindReleased(self, bind):
+    def bind_released(self, bind):
         """
         Checks to see if the binding you specify was just released this frame. If it was, 1 is returned.
 

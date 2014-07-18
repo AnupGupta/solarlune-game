@@ -24,7 +24,6 @@ import bge
 
 
 class CViewManager():
-
     """
     A static class that you don't have to instantiate to use.
     """
@@ -50,7 +49,7 @@ class CViewManager():
                             'h': 0.0,
                             'x': 0.0,
                             'y': 0.0,
-                            }
+        }
 
         if auto_set_hint != self.AH_NONE:
 
@@ -135,14 +134,20 @@ class CViewManager():
                                      int(view['x'] * win_w) + int(view['w'] * win_w),
                                      int(view['y'] * win_h) + int(view['h'] * win_h))
 
-                view_cam.useViewport = True
+                if len(self.views) > 1:  # You're not just using one view
+
+                    view_cam.useViewport = True
+
+                else:
+
+                    view_cam.useViewport = False  # Gotta test this out
 
             else:
 
                 if view_cam is not None and view_cam.invalid:
-
                     print('ERROR: Camera for view ' + v + ' has become invalid.')
 
                     view['camera'] = None
+
 
 manager = CViewManager()

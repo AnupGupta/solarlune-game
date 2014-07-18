@@ -1,4 +1,4 @@
-########## 2D SCREEN FILTER LIBRARY (Shaders.Filters) ##########
+# ######### 2D SCREEN FILTER LIBRARY (Shaders.Filters) ##########
 #
 # Author: SolarLune and many others
 # Date Updated: 6/4/14
@@ -11,7 +11,7 @@
 # Hopefully someone can use them.
 #
 
-### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ###
 ### This script and the functions below
 ### are under the MIT license agreement, thouhg it would be
@@ -37,12 +37,12 @@
 ### bgl_LuminanceTexture (The luminosity)
 ### bgl_DepthTexture (The depth of each pixel (fragment))
 
-from bge import logic, render
+from bge import logic
 
 ### Filters
 
-def readdepths():
 
+def readdepths():
     script = """
 
     uniform sampler2D bgl_DepthTexture;
@@ -64,7 +64,8 @@ def readdepths():
 
     return script
 
-def chromatic(dist = 1.0):
+
+def chromatic(dist=1.0):
     """
     Chromatic aberration screen filter. Received from someone from the BlenderArtists forums.
 
@@ -91,8 +92,8 @@ def chromatic(dist = 1.0):
     }
     """)
 
-def digitaldistort():
 
+def digitaldistort():
     script = """
 
     uniform sampler2D bgl_RenderedTexture;
@@ -187,7 +188,8 @@ def digitaldistort():
 
     return script
 
-def reduce(coloramt = 1.0):
+
+def reduce(coloramt=1.0):
     """
     Color Reduction - Reduces number of colors that are outputted (rounds all values down).
 
@@ -200,7 +202,7 @@ def reduce(coloramt = 1.0):
     1.5 = like old-school computer level graphics (VGA?)
     1.0 = (default) is basic colors (only red, green, blue, or a complete combination thereof)
     """
-    return("""
+    return ("""
 
     vec4 colround(float value, vec4 color){
 
@@ -230,10 +232,8 @@ def reduce(coloramt = 1.0):
         """
     )
 
-#def crtscan(strength = 1.0, width = 1.0, quality = 0, scanstrength = 1.0):
 
 def gameboy():
-
     filt = """
 
         uniform sampler2D bgl_RenderedTexture;
@@ -259,8 +259,8 @@ def gameboy():
 
     return filt
 
-def scanlines(scandarkness = 0.0, scanwidth = 1.0, pixelcount = 4.0, samplesize = 1, scancontrast = 1.0):
 
+def scanlines(scandarkness=0.0, scanwidth=1.0, pixelcount=4.0, samplesize=1, scancontrast=1.0):
     """
     CRT Scan-line effect filter.
 
@@ -322,280 +322,10 @@ def scanlines(scandarkness = 0.0, scanwidth = 1.0, pixelcount = 4.0, samplesize 
 
     return (scan)
 
-def bloomold(strength = 1.0, width = 1.0, quality = 0):
 
-    """
-    Bloom filter.
+def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, threshold=.5):
 
-    Author: Blender Foundation for the game Yo Frankie! - Readapted by SolarLune
-    Date Updated: 6/6/11
-
-
-
-    strength = how strong the bloom affect appears
-    width = how wide of an area to sample; note that I only use 16 samples (which isn't that much, as this is
-    usually done with a for-loop. A for-loop isn't used in this case because my graphics card doens't support for-loop filters)
-
-    Note that this is a more efficient, but less appealing bloom effect that uses if statements instead of
-    for loops. It works well and is pretty efficient, but it's noticeably worse than the usual good bloom filters.
-    """
-
-    bloomlow = """
-            // Name: Hey Frankie-based 16-Sample Bloom Effect
-            // Author: BGE Foundation, Readapted by SolarLune
-            // For slower / less capable graphics cards (that can't handle for-loops)
-
-            uniform sampler2D bgl_RenderedTexture;
-
-            float samples[11];
-
-            void main()
-            {
-                samples[0] = 0.0222244;
-                samples[1] = 0.0378346;
-                samples[2] = 0.0755906;
-                samples[3] = 0.1309775;
-                samples[4] = 0.1756663;
-                samples[5] = 0.1974126;
-                samples[6] = 0.1756663;
-                samples[7] = 0.1309775;
-                samples[8] = 0.0755906;
-                samples[9] = 0.0378346;
-                samples[10] = 0.0222244;
-
-                vec4 sum = vec4(0);
-                vec2 texcoord = vec2(gl_TexCoord[0]);
-
-                vec4 center = texture2D(bgl_RenderedTexture, texcoord);
-
-                float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 16 times below (4 times horizontally, 4 times for each of those vertically)
-                // Usually 0.002, but as can be seen below, sum would USUALLY be calculated 8 * 8 times (absurd CPU drain); should probably be around 0.001
-
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[4];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(4, -4)*width) * samples[6];
-
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[4];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(4, -2)*width) * samples[6];
-
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[4];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(4, 2)*width) * samples[6];
-
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 4)*width) * samples[0];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 4)*width) * samples[2];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 4)*width) * samples[4];
-                sum += texture2D(bgl_RenderedTexture, texcoord + vec2(4, 4)*width) * samples[6];
-
-                vec4 bloom = sum*(""" + str(float(strength)) + """ / 1.5);
-
-                gl_FragColor = center + bloom;	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
-            }"""
-    bloommed = """
-        // Name: Hey Frankie-based 32-Sample Bloom Effect
-        // Author: BGE Foundation, Readapted by SolarLune
-        // For slower / less capable graphics cards (that can't handle for-loops)
-        // Date Updated: 5/3/11
-
-        uniform sampler2D bgl_RenderedTexture;
-
-        float samples[11];
-
-        void main()
-        {
-            samples[0] = 0.0222244;
-            samples[1] = 0.0378346;
-            samples[2] = 0.0755906;
-            samples[3] = 0.1309775;
-            samples[4] = 0.1756663;
-            samples[5] = 0.1974126;
-            samples[6] = 0.1756663;
-            samples[7] = 0.1309775;
-            samples[8] = 0.0755906;
-            samples[9] = 0.0378346;
-            samples[10] = 0.0222244;
-
-            vec4 sum = vec4(0);
-            vec2 texcoord = vec2(gl_TexCoord[0]);
-
-            vec4 center = texture2D(bgl_RenderedTexture, texcoord);
-
-            float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -4)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -3)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -3)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -3)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -3)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -2)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -1)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -1)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -1)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -1)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 1)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 1)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 1)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 1)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 3)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 3)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 3)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 3)*width) * samples[7];
-
-            vec4 bloom = sum*(""" + str(float(strength)) + """ / 3.0);
-
-            gl_FragColor = center + bloom;	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
-        }"""
-    bloomhigh="""
-                // Name: Hey Frankie-based 64-Sample Bloom Effect
-        // Author: BGE Foundation, Readapted by SolarLune
-        // For slower / less capable graphics cards (that can't handle for-loops)
-        // Date Updated: 5/3/11
-
-        uniform sampler2D bgl_RenderedTexture;
-
-        float samples[11];
-
-        void main()
-        {
-            samples[0] = 0.0222244;
-            samples[1] = 0.0378346;
-            samples[2] = 0.0755906;
-            samples[3] = 0.1309775;
-            samples[4] = 0.1756663;
-            samples[5] = 0.1974126;
-            samples[6] = 0.1756663;
-            samples[7] = 0.1309775;
-            samples[8] = 0.0755906;
-            samples[9] = 0.0378346;
-            samples[10] = 0.0222244;
-
-            vec4 sum = vec4(0);
-            vec2 texcoord = vec2(gl_TexCoord[0]);
-
-            vec4 center = texture2D(bgl_RenderedTexture, texcoord);
-
-            float width = 0.002 * """ + str(float(width)) + """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -4)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -3.5)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -3.5)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -3.5)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -3.5)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -3)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -3)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -3)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -3)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -2.5)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -2.5)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -2.5)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -2.5)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -2)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -1.5)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -1.5)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -1.5)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -1.5)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -1)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -1)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -1)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -1)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -0.5)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -0.5)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -0.5)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -0.5)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0.5)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0.5)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0.5)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0.5)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 1)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 1)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 1)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 1)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 1.5)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 1.5)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 1.5)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 1.5)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2.5)*width) * samples[0];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2.5)*width) * samples[2];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2.5)*width) * samples[4];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2.5)*width) * samples[6];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 3)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 3)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 3)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 3)*width) * samples[7];
-
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 3.5)*width) * samples[1];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 3.5)*width) * samples[3];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 3.5)*width) * samples[5];
-            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 3.5)*width) * samples[7];
-
-            vec4 bloom = sum*(""" + str(float(strength)) + """ / 6.0);
-
-            gl_FragColor = center + bloom;	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
-        }
-    """
-    if quality == 0:
-        return (bloomlow)
-    elif quality == 1:
-        return (bloommed)
-    else:
-        return (bloomhigh)
-
-def bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_num_y = 4, threshold = .5):
-
-    bloom = """
+    shader = """
 
         uniform sampler2D bgl_RenderedTexture;
         uniform sampler2D bgl_LuminanceTexture;
@@ -655,7 +385,7 @@ def bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
 
                     bloom_col = texture2D(bgl_RenderedTexture, tv);
 
-                    if (luminance(bloom_col) > threshold)
+                    if (luminance(bloom_col) >= threshold)
                         sum += bloom_col;
                 }
             }
@@ -675,10 +405,10 @@ def bloom(strength = 1.0, width = 1.0, height = 1.0, sample_num_x = 4, sample_nu
         }
     """
 
-    return (bloom)
+    return shader
 
-def bloomcrossold(strength = 1.0, width = 1.0, shape = 0, quality = 0):
 
+def bloomcrossold(strength=1.0, width=1.0, shape=0, quality=0):
     """
     Cross-shaped Bloom filter. Derived from Bloom, which is adapted from Blender Foundation's Bloom filter
 
@@ -1163,8 +893,8 @@ def bloomcrossold(strength = 1.0, width = 1.0, shape = 0, quality = 0):
     else:
         return bchigh
 
-def bloomcross(strength = 1.0, width = 1.0, height = 1.0, shape = 0, sample_num = 4):
 
+def bloomcross(strength=1.0, width=1.0, height=1.0, shape=0, sample_num=4):
     forbloom = """
 
         uniform sampler2D bgl_RenderedTexture;
@@ -1226,8 +956,8 @@ def bloomcross(strength = 1.0, width = 1.0, height = 1.0, shape = 0, sample_num 
 
     return (forbloom)
 
-def colorbleed(strength = 1.0, width = 1.0):
 
+def colorbleed(strength=1.0, width=1.0):
     """
     Attempt at a color bleeding filter.
 
@@ -1238,7 +968,7 @@ def colorbleed(strength = 1.0, width = 1.0):
     width = how wide of an area to sample; note that I only use 16 samples.
     """
 
-    return("""
+    return ("""
 
     // Name: Hey Frankie-based 16-Sample Bloom Effect
     // Author: BGE Foundation, Readapted by SolarLune
@@ -1265,35 +995,35 @@ def colorbleed(strength = 1.0, width = 1.0):
         vec4 sum = vec4(0);
         vec2 texcoord = vec2(gl_TexCoord[0]);
         float width = 0.002 * """ + str(float(width)) +
-        """;	// width = how wide of a sample to use (is repeated 16 times below (4 times horizontally, 4 times for each of those vertically)
-        // Usually 0.002, but as can be seen below, sum would USUALLY be calculated 8 * 8 times (absurd CPU drain); should probably be around 0.001
+            """;	// width = how wide of a sample to use (is repeated 16 times below (4 times horizontally, 4 times for each of those vertically)
+            // Usually 0.002, but as can be seen below, sum would USUALLY be calculated 8 * 8 times (absurd CPU drain); should probably be around 0.001
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -4)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -4)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -2)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -2)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[6];
-        //gl_FragColor = sum / 16.0;
-        gl_FragColor = sum * (""" + str(float(strength)) + """ / 1.5) * texture2D(bgl_RenderedTexture, texcoord);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[6];
+            //gl_FragColor = sum / 16.0;
+            gl_FragColor = sum * (""" + str(float(strength)) + """ / 1.5) * texture2D(bgl_RenderedTexture, texcoord);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
     }
         """)
 
-def colorbleed32(strength = 1.0, width = 1.0):
 
+def colorbleed32(strength=1.0, width=1.0):
     """
     Attempt at a 32-sample color bleeding filter.
 
@@ -1304,7 +1034,7 @@ def colorbleed32(strength = 1.0, width = 1.0):
     width = how wide of an area to sample; note that I only use 16 samples.
     """
 
-    return("""
+    return ("""
 
     // Name: Hey Frankie-based 32-Sample Bloom Effect
     // Author: BGE Foundation, Readapted by SolarLune
@@ -1332,64 +1062,64 @@ def colorbleed32(strength = 1.0, width = 1.0):
         vec4 sum = vec4(0);
         vec2 texcoord = vec2(gl_TexCoord[0]);
         float width = 0.004 * """ + str(float(width)) +
-        """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
+            """;	// width = how wide of a sample to use (is repeated 32 times below (8 times vertically, 4 times for each of those vertically)
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -4)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -4)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -4)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -4)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -4)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -3)*width) * samples[1];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -3)*width) * samples[3];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -3)*width) * samples[5];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -3)*width) * samples[7];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -3)*width) * samples[1];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -3)*width) * samples[3];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -3)*width) * samples[5];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -3)*width) * samples[7];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -2)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, -2)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, -2)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, -2)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, -2)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -1)*width) * samples[1];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -1)*width) * samples[3];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -1)*width) * samples[5];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -1)*width) * samples[7];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, -1)*width) * samples[1];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, -1)*width) * samples[3];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, -1)*width) * samples[5];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, -1)*width) * samples[7];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 0)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 0)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 0)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 0)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 1)*width) * samples[1];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 1)*width) * samples[3];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 1)*width) * samples[5];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 1)*width) * samples[7];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 1)*width) * samples[1];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 1)*width) * samples[3];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 1)*width) * samples[5];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 1)*width) * samples[7];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2)*width) * samples[4];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[6];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-4, 2)*width) * samples[0];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-2, 2)*width) * samples[2];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(0, 2)*width) * samples[4];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(2, 2)*width) * samples[6];
 
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 3)*width) * samples[1];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 3)*width) * samples[3];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 3)*width) * samples[5];
-        sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 3)*width) * samples[7];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-3, 3)*width) * samples[1];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(-1, 3)*width) * samples[3];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(1, 3)*width) * samples[5];
+            sum += texture2D(bgl_RenderedTexture, texcoord + vec2(3, 3)*width) * samples[7];
 
-        //for( i= -4 ;i < 4; i++)	// The sixteen sum instructions above replace these for loops
-        //{
-        //    for( j= -4 ;j < 4; j++)
-        //    {
-        //			sum += texture2D(bgl_RenderedTexture, texcoord + vec2(j, i)*0.004) * samples[j+4];
-        //		}
-        //	}
+            //for( i= -4 ;i < 4; i++)	// The sixteen sum instructions above replace these for loops
+            //{
+            //    for( j= -4 ;j < 4; j++)
+            //    {
+            //			sum += texture2D(bgl_RenderedTexture, texcoord + vec2(j, i)*0.004) * samples[j+4];
+            //		}
+            //	}
 
-        sum.a = 1.0;
+            sum.a = 1.0;
 
-        gl_FragColor = sum*(""" + str(float(strength)) + """ / 3.0) * texture2D(bgl_RenderedTexture, texcoord);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
+            gl_FragColor = sum*(""" + str(float(strength)) + """ / 3.0) * texture2D(bgl_RenderedTexture, texcoord);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
     }
         """)
 
-def contrast(strength = 1.0):
 
+def contrast(strength=1.0):
     """
     Contrast filter.
 
@@ -1399,18 +1129,18 @@ def contrast(strength = 1.0):
     strength = how strong the contrast filter is.
     """
 
-    return(
-    """
+    return (
+        """
 
-        // Name: Contrast Filter
-        // Author: SolarLune
-        // Date Updated: 6/6/11
+            // Name: Contrast Filter
+            // Author: SolarLune
+            // Date Updated: 6/6/11
 
-        uniform sampler2D bgl_RenderedTexture;
+            uniform sampler2D bgl_RenderedTexture;
 
-        void main(void)
-        {
-            float contrast = """ + str(float(strength)) + """;	// Multiplication value for contrast (high = more, 0 = none)
+            void main(void)
+            {
+                float contrast = """ + str(float(strength)) + """;	// Multiplication value for contrast (high = more, 0 = none)
             vec4 color = texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x, gl_TexCoord[0].st.y));
             float avg = dot(color.rgb, vec3(0.299, 0.587, 0.114));
 
@@ -1423,8 +1153,46 @@ def contrast(strength = 1.0):
         """
     )
 
-def default(return_type = 0):
 
+def dynamic_contrast(strength=1.0):
+    script = """
+
+        uniform sampler2D bgl_RenderedTexture;
+
+        float get_brightness(vec4 rgba){
+            return max(max(rgba.r, rgba.g), rgba.b);
+        }
+
+        void main(void){
+
+            vec4 color = texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st));
+
+            float di = 0.2;
+            float contrast_range = 3.0;
+            float contrast_base = 1.0;
+
+            float brightness = get_brightness(texture2D(bgl_RenderedTexture, vec2(0.5-di, 0.5-di)));
+            brightness += get_brightness(texture2D(bgl_RenderedTexture, vec2(0.5-di, 0.5+di)));
+            brightness += get_brightness(texture2D(bgl_RenderedTexture, vec2(0.5+di, 0.5+di)));
+            brightness += get_brightness(texture2D(bgl_RenderedTexture, vec2(0.5+di, 0.5-di)));
+            brightness += get_brightness(texture2D(bgl_RenderedTexture, vec2(0.5, 0.5)));
+
+            brightness /= 5.0;
+
+            float neg_br = 1.0 - brightness;
+
+            float br = contrast_base + (neg_br * contrast_range);
+
+            gl_FragColor = color * (br);
+
+        }
+
+    """
+
+    return script
+
+
+def default(return_type=0):
     ### Just a 2D filter without any changes, basically.
     ### 0 = Rendered texture (screen)
     ### 1 = Luminance texture
@@ -1473,8 +1241,8 @@ def default(return_type = 0):
 
     return filt
 
-def desaturateuni(var = 'desatstr'):
 
+def desaturateuni(var='desatstr'):
     return ("""
 
         // Name: Desaturation Filter
@@ -1498,8 +1266,8 @@ def desaturateuni(var = 'desatstr'):
         }
         """)
 
-def desaturate(percentage = 1.0):
 
+def desaturate(percentage=1.0):
     return ("""
 
         // Name: Desaturation Filter
@@ -1522,8 +1290,8 @@ def desaturate(percentage = 1.0):
         }
         """)
 
-def sepia(percentage = 1.0):
 
+def sepia(percentage=1.0):
     return ("""
 
         // Name: Sepia Filter
@@ -1546,8 +1314,8 @@ def sepia(percentage = 1.0):
         }
         """)
 
-def harsh():
 
+def harsh():
     return ("""
 
         // Name: Harsh Colors
@@ -1598,8 +1366,8 @@ def harsh():
         }
         """)
 
-def channel(color = 'r', percentage = 1.0):
 
+def channel(color='r', percentage=1.0):
     """
     Color channeling. Because of the script's simplicity, the muting only works with a single channel - R, G, or B.
     color = a string ('r', 'g', or 'b') to mute all colors except that channel.
@@ -1610,7 +1378,7 @@ def channel(color = 'r', percentage = 1.0):
     """
 
     main = color.lower()
-    subone = 'g'	# Defaults to muting Red
+    subone = 'g'  # Defaults to muting Red
     subtwo = 'b'
 
     if main == 'g':
@@ -1620,27 +1388,28 @@ def channel(color = 'r', percentage = 1.0):
         subone = 'r'
         subtwo = 'g'
 
-    return(
+    return (
 
-    """
+        """
 
-    // Name: Color Channel
-    // Author: SolarLune
-    // Date Updated: 6/6/11
+        // Name: Color Channel
+        // Author: SolarLune
+        // Date Updated: 6/6/11
 
-    uniform sampler2D bgl_RenderedTexture;
+        uniform sampler2D bgl_RenderedTexture;
 
-    void main(void)
-    {
-        vec4 color;
-        color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
+        void main(void)
+        {
+            vec4 color;
+            color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
 
-        float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        // The human eye is more sensitive to certain colors (like bright yellow) than others, so you need to use this specific color-formula to average them out to one monotone color (gray)
+            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            // The human eye is more sensitive to certain colors (like bright yellow) than others, so you need to use this specific color-formula to average them out to one monotone color (gray)
 
-        vec4 desat;
+            vec4 desat;
 
-        if ((color.""" + str(main) + """ < color.""" + str(subone) + """) || (color.""" + str(main) + """ < color.""" + str(subtwo) + """))
+            if ((color.""" + str(main) + """ < color.""" + str(subone) + """) || (color.""" + str(
+            main) + """ < color.""" + str(subtwo) + """))
             desat = vec4(gray, gray, gray, color.a);
             // If red isn't the dominant color in the pixel (like the green cube or dark blue
             // background), gray it out
@@ -1655,8 +1424,8 @@ def channel(color = 'r', percentage = 1.0):
     """
     )
 
-def mute(color = 'r', percentage = 1.0):
 
+def mute(color='r', percentage=1.0):
     """
     Color muting. The opposite of Channel - mute only a specific color channel.
     color = a string ('r', 'g', or 'b') to mute only the specified color channel.
@@ -1667,7 +1436,7 @@ def mute(color = 'r', percentage = 1.0):
     """
 
     main = color.lower()
-    subone = 'g'	# Defaults to channeling Red
+    subone = 'g'  # Defaults to channeling Red
     subtwo = 'b'
 
     if main == 'g':
@@ -1677,31 +1446,32 @@ def mute(color = 'r', percentage = 1.0):
         subone = 'r'
         subtwo = 'g'
 
-    return(
+    return (
 
-    """
+        """
 
-    // Name: Color Mute
-    // Author: SolarLune
-    // Date Updated: 6/6/11
+        // Name: Color Mute
+        // Author: SolarLune
+        // Date Updated: 6/6/11
 
-    // Notes: Color muting; this works, but some colors are (obviously)
-    // made up of others; for example, purple is blue AND red, so if
-    // you mute all colors but red, purple will still show up...
+        // Notes: Color muting; this works, but some colors are (obviously)
+        // made up of others; for example, purple is blue AND red, so if
+        // you mute all colors but red, purple will still show up...
 
-    uniform sampler2D bgl_RenderedTexture;
+        uniform sampler2D bgl_RenderedTexture;
 
-    void main(void)
-    {
-        vec4 color;
-        color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
+        void main(void)
+        {
+            vec4 color;
+            color = texture2D(bgl_RenderedTexture, gl_TexCoord[0].st);
 
-        float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        // The human eye is more sensitive to certain colors (like bright yellow) than others, so you need to use this specific color-formula to average them out to one monotone color (gray)
+            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            // The human eye is more sensitive to certain colors (like bright yellow) than others, so you need to use this specific color-formula to average them out to one monotone color (gray)
 
-        vec4 desat;
+            vec4 desat;
 
-        if ((color.""" + str(main) + """ > color.""" + str(subone) + """) && (color.""" + str(main) + """ > color.""" + str(subtwo) + """))
+            if ((color.""" + str(main) + """ > color.""" + str(subone) + """) && (color.""" + str(
+            main) + """ > color.""" + str(subtwo) + """))
             desat = vec4(gray, gray, gray, color.a);
             // If red is the dominant color in the pixel (like the green cube or dark blue
             // background), gray it out
@@ -1716,8 +1486,8 @@ def mute(color = 'r', percentage = 1.0):
     """
     )
 
-def invert(percentage = 1.0):
 
+def invert(percentage=1.0):
     """
     Color inversion filter.
 
@@ -1725,7 +1495,7 @@ def invert(percentage = 1.0):
     Date Updated: 6/6/11
     """
 
-    return("""
+    return ("""
 
     // Name: Invert
     // Author: printed in XNA Unleashed, readapted by SolarLune
@@ -1742,7 +1512,8 @@ def invert(percentage = 1.0):
     }
     """)
 
-def blur(distance = 1.0, percentage = 1.0):
+
+def blur(distance=1.0, percentage=1.0):
     """
     Blur filter.
     distance = distance apart each sample is
@@ -1790,7 +1561,8 @@ def blur(distance = 1.0, percentage = 1.0):
     }
         """)
 
-def blur32(distance = 1.0, percentage = 1.0):
+
+def blur32(distance=1.0, percentage=1.0):
     """
     32-sample Blur filter.
     distance = distance apart each sample is
@@ -1855,8 +1627,8 @@ def blur32(distance = 1.0, percentage = 1.0):
     }
         """)
 
-def ink(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1] ):
 
+def ink(thickness=1.0, edge=1.0, col=(0, 0, 0, 1)):
     """
     Ink filter. It doesn't use the depth texture, so it tries to create black edges around different colors.
 
@@ -1891,7 +1663,7 @@ def ink(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1] ):
     void main(void)
     {
         float value = 0.001 * """ +
-        str(float(thickness)) + """;	// Value here controls how large the samples (and hence how thick the lines) are
+            str(float(thickness)) + """;	// Value here controls how large the samples (and hence how thick the lines) are
         vec4 sample = texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x + value, gl_TexCoord[0].st.y + value));
         sample += texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x - value, gl_TexCoord[0].st.y - value));
         sample += texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x + value, gl_TexCoord[0].st.y - value));
@@ -1900,7 +1672,7 @@ def ink(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1] ):
         vec4 center = texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x, gl_TexCoord[0].st.y));
 
         float edge = 0.1 / """ +
-        str(float(edge))		+ """;		// 'Edge' here controls how easy it is to get an outline on objects
+            str(float(edge)) + """;		// 'Edge' here controls how easy it is to get an outline on objects
 
         vec4 diff;
         diff = vec4(abs(sample.r - center.r), abs(sample.g - center.g), abs(sample.b- center.b), abs(sample.a - center.a));
@@ -1910,16 +1682,17 @@ def ink(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1] ):
             vec4 color = vec4(""" +
             str(float(col[0])) + """, """ +
             str(float(col[1])) + """, """ +
-            str(float(col[2]))  + """, 1.0);
+            str(float(col[2])) + """, 1.0);
             gl_FragColor = mix(center, color, """ + str(float(col[3])) +
             """);
         }
         else
             gl_FragColor = center;
         }
-        """	)
+        """    )
 
-def edgedetect(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1]):
+
+def edgedetect(thickness=1.0, edge=1.0, col=(0, 0, 0, 1)):
     """
     Author: SolarLune
     Date Updated: 6/6/11
@@ -1942,7 +1715,7 @@ def edgedetect(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1]):
     void main(void)
     {
         float value = 0.001 * """ +
-        str(float(thickness)) + """;	// Value here controls how large the samples (and hence how thick the lines) are
+            str(float(thickness)) + """;	// Value here controls how large the samples (and hence how thick the lines) are
         vec4 sample = texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x + value, gl_TexCoord[0].st.y + value));
         sample += texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x - value, gl_TexCoord[0].st.y - value));
         sample += texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x + value, gl_TexCoord[0].st.y - value));
@@ -1951,7 +1724,7 @@ def edgedetect(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1]):
         vec4 center = texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st.x, gl_TexCoord[0].st.y));
 
         float edge = 0.01 / """ +
-        str(float(edge))		+ """;		// 'Edge' here controls how easy it is to get an outline on objects
+            str(float(edge)) + """;		// 'Edge' here controls how easy it is to get an outline on objects
 
         vec4 diff;
         diff = vec4(abs(sample.r - center.r), abs(sample.g - center.g), abs(sample.b- center.b), abs(sample.a - center.a));
@@ -1961,17 +1734,17 @@ def edgedetect(thickness = 1.0, edge = 1.0, col = [0, 0, 0, 1]):
             vec4 color = vec4(""" +
             str(float(col[0])) + """, """ +
             str(float(col[1])) + """, """ +
-            str(float(col[2]))  + """, 1.0);
+            str(float(col[2])) + """, 1.0);
             gl_FragColor = mix(center, color, """ + str(float(col[3])) +
             """);
         }
         else
             gl_FragColor = center;
     }
-        """	)
+        """    )
 
-def pixellate(resolution_x = 320, resolution_y = 240):
 
+def pixellate(resolution_x=320, resolution_y=240):
     """
     A sharp pixellation filter.
 
@@ -2014,8 +1787,8 @@ def pixellate(resolution_x = 320, resolution_y = 240):
     }
     """)
 
-def pixellatefactor(px_x = 4, px_y = 4):
 
+def pixellatefactor(px_x=4, px_y=4):
     """
     A pixellation filter that uses factor values instead of resolution sizes.
 
@@ -2054,7 +1827,8 @@ def pixellatefactor(px_x = 4, px_y = 4):
     }
     """)
 
-def radialblur(percentage = 1.0, minimum = 1.0):
+
+def radialblur(percentage=1.0, minimum=1.0):
     """
     Why a function? Look at Pixellate above this.
     percentage = amount of blurring to apply - can go above 1 to increase the effect even more so.
@@ -2111,7 +1885,8 @@ def radialblur(percentage = 1.0, minimum = 1.0):
     }
     """)
 
-def radialdesaturate(percentage = 1.0, minimum = 1.0):
+
+def radialdesaturate(percentage=1.0, minimum=1.0):
     """
     percentage = amount of blurring to apply - can go above 1 to increase the effect even more so.
     minimum = minimum amount of area to blur; lower numbers equals less of the screen blurred.
@@ -2151,4 +1926,4 @@ def radialdesaturate(percentage = 1.0, minimum = 1.0):
         gl_FragColor = mix(color, desat, value);
     }
     """)
-#
+    #

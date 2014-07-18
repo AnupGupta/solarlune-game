@@ -26,11 +26,7 @@ this script, SolarLune, should you use this script.
 """
 
 
-from bge import logic
-
-
 def init(cont):
-
     obj = cont.owner
 
     sce = obj.scene
@@ -49,15 +45,13 @@ def init(cont):
         for mat in range(mesh.numMaterials):
 
             for v in range(mesh.getVertexArrayLength(mat)):
-
                 vert = mesh.getVertex(mat, v)
 
-                obj['verts'].append(vert)						# Get all verts
+                obj['verts'].append(vert)  # Get all verts
 
         obj['vert_offsets'] = {}
 
         for vert in obj['verts']:
-
             obj['vert_offsets'][vert] = vert.XYZ
 
         vert_pairs = {}
@@ -65,55 +59,53 @@ def init(cont):
         for vert in obj['verts']:
 
             if obj['trail_axis'].lower() == 'x':
-                vert_y = round(vert.x, 2)			# Round it off to ensure that verts that have very close X positions (i.e. 0 and 0.01) get grouped togethe
+                vert_y = round(vert.x,2)  # Round it off to ensure that verts that have very close X positions
+                # (i.e. 0 and 0.01) get grouped together
             elif obj['trail_axis'].lower() == 'y':
                 vert_y = round(vert.y, 2)
             else:
                 vert_y = round(vert.z, 2)
 
             if not vert_y in vert_pairs:
-
                 vert_pairs[vert_y] = []
 
-            vert_pairs[vert_y].append(vert)		# Get the verts paired with their positions
+            vert_pairs[vert_y].append(vert)  # Get the verts paired with their positions
 
-        obj['vert_pairs']= []
+        obj['vert_pairs'] = []
 
         for vp in vert_pairs:
-
             obj['vert_pairs'].append([vp, vert_pairs[vp]])
 
-        obj['vert_pairs'] = sorted(obj['vert_pairs'], key = lambda x: x[0], reverse = True)
+        obj['vert_pairs'] = sorted(obj['vert_pairs'], key=lambda x: x[0], reverse=True)
 
         obj['target_positions'] = []
 
-        #if not 'trail_length' in obj:
+        # if not 'trail_length' in obj:
         #	obj['trail_length'] = 1.0	# Trail length in seconds
 
 
 
         if not 'trail_stretch' in obj:
-            obj['trail_stretch'] = 1			# Stretch the trail to 'fit' the movements
+            obj['trail_stretch'] = 1  # Stretch the trail to 'fit' the movements
 
         if not 'trail_spacing' in obj:
-            obj['trail_spacing'] = 3		# Number of frames between each edge in the trail
+            obj['trail_spacing'] = 3  # Number of frames between each edge in the trail
 
         if not 'trail_reverse' in obj:
             obj['trail_reverse'] = 0
 
         if not 'trail_onmoving' in obj:
-            obj['trail_onmoving'] = 0	# Update the trail only when moving
+            obj['trail_onmoving'] = 0  # Update the trail only when moving
 
-        obj['trail_counter'] = obj['trail_spacing']			# Number of frames between each 'keyframe'
+        obj['trail_counter'] = obj['trail_spacing']  # Number of frames between each 'keyframe'
 
-        if not 'target' in obj:			# Target of the trail
+        if not 'target' in obj:  # Target of the trail
 
             obj['target'] = obj.parent
 
         else:
 
             if isinstance(obj['target'], str):
-
                 obj['target'] = sce.objects[obj['target']]
 
         obj['target_past_pos'] = obj['target'].worldPosition.copy()
@@ -122,7 +114,6 @@ def init(cont):
         target_info = [obj['target'].worldPosition.copy(), obj['target'].worldOrientation.copy()]
 
         for x in range(len(obj['vert_pairs']) * obj['trail_spacing']):
-
             obj['target_positions'].insert(0, target_info)
 
     else:
@@ -131,7 +122,6 @@ def init(cont):
 
 
 def main(cont):
-
     obj = cont.owner
 
     if init(cont):
@@ -141,7 +131,6 @@ def main(cont):
             obj.worldOrientation = obj['target'].worldOrientation
 
         target_info = [obj['target'].worldPosition.copy(), obj['target'].worldOrientation.copy()]
-
 
         insert = 0
 
@@ -154,15 +143,13 @@ def main(cont):
             threshold = 0.0001
 
             if pos_diff > threshold or ori_diff > threshold:
-
                 insert = 1
 
         if insert:
             obj['target_positions'].insert(0, target_info)
 
         if len(obj['target_positions']) > len(obj['vert_pairs']) * obj['trail_spacing']:
-
-            obj['target_positions'].pop()		# Remove oldest position value
+            obj['target_positions'].pop()  # Remove oldest position value
 
         for vp in range(0, len(obj['vert_pairs'])):
 
@@ -176,18 +163,22 @@ def main(cont):
                 for vert in verts:
 
                     if obj['trail_reverse']:
-                        if obj['trail_stretch']:		# Factor in position of the target to 'stretch' (useful for trails, where the end point stays still, hopefully, until the rest 'catches up'')
-                            diff = (pos - obj['target'].worldPosition) * ori#.inverted()
+                        if obj['trail_stretch']:  # Factor in position of the target to 'stretch' (useful for trails,
+                            # where the end point stays still, hopefully, until the rest 'catches up'')
+                            diff = (pos - obj['target'].worldPosition) * ori  # .inverted()
                             vert.XYZ = (obj['vert_offsets'][vert] + diff) * obj['target'].worldOrientation.inverted()
-                        else:								# Don't factor in movement of the trail (useful for things that wouldn't stretch, like scarves)
+                        else:  # Don't factor in movement of the trail
+                            # (useful for things that wouldn't stretch, like scarves)
                             vert.XYZ = obj['vert_offsets'][vert] * obj['target'].worldOrientation.inverted()
                         vert.XYZ = vert.XYZ * ori
                     else:
 
-                        if obj['trail_stretch']:		# Factor in position of the target to 'stretch' (useful for trails, where the end point stays still, hopefully, until the rest 'catches up'')
+                        if obj['trail_stretch']:  # Factor in position of the target to 'stretch' (useful for trails,
+                        # where the end point stays still, hopefully, until the rest 'catches up'')
                             diff = (pos - obj['target'].worldPosition) * ori
                             vert.XYZ = (obj['vert_offsets'][vert] + diff) * obj['target'].worldOrientation
-                        else:								# Don't factor in movement of the trail (useful for things that wouldn't stretch, like scarves)
+                        else:  # Don't factor in movement of the trail
+                        # (useful for things that wouldn't stretch, like scarves)
                             vert.XYZ = obj['vert_offsets'][vert] * obj['target'].worldOrientation
                         vert.XYZ = vert.XYZ * ori.inverted()
 

@@ -4,7 +4,6 @@ from bge import logic
 
 
 class Scenes:
-
     def __str__(self):
         return str(logic.getSceneList())
 
@@ -47,11 +46,11 @@ class Scenes:
             if not scene.name in args:
                 scene.end()
 
+
 scenes = Scenes()
 
 
 class CCallback(object):
-
     """
     A callback class for making callback objects. These objects are useful for telling when a value changes - for example, you
     could use a callback to tell when the Player collides with an object other than the one he is currently colliding with (None, if
@@ -92,16 +91,16 @@ class CCallback(object):
         else:
             callback = [check, onchange, mode, check()]
 
-        if cb_name is None:				# If you don't specify an ID, then it will return an internal ID counter
+        if cb_name is None:  # If you don't specify an ID, then it will return an internal ID counter
             cb_name = self.idindex
             self.idindex += 1
 
-        self.calls[cb_name] = callback	# A list of all calls for this callback object - the checking function,
+        self.calls[cb_name] = callback  # A list of all calls for this callback object - the checking function,
         # the function to return if the callback is true, the mode, as well as the previous value (used by the Change
         # mode, which is default)
 
-        return cb_name					# Returns the ID number if you want to keep track of it and access the Callback
-        #  object's callbacks through object.calls[id]
+        return cb_name  # Returns the ID number if you want to keep track of it and access the Callback
+        # object's callbacks through object.calls[id]
 
     def remove(self, cb_name=None):
 
@@ -135,32 +134,59 @@ class CCallback(object):
 
             mode = call[2]
 
-            if call[3] != value and mode == 0:		# Changed (not equal)
+            if call[3] != value and mode == 0:  # Changed (not equal)
                 call[1](call[3])
                 call[3] = value
-            elif call[3] == value and mode == 1:	# Equals (experimental; stick with mode 0)
+            elif call[3] == value and mode == 1:  # Equals (experimental; stick with mode 0)
                 call[1](call[3])
                 call[3] = value
-            elif call[3] > value and mode == 2:		# Greater than (experimental; stick with mode 0)
+            elif call[3] > value and mode == 2:  # Greater than (experimental; stick with mode 0)
                 call[1](call[3])
                 call[3] = value
-            elif call[3] < value and mode == 3:		# Less than (experimental; stick with mode 0)
+            elif call[3] < value and mode == 3:  # Less than (experimental; stick with mode 0)
                 call[1](call[3])
                 call[3] = value
+
 
 callbacks = CCallback()
 
 
 def end_game_on_exception():
-
     """
     Ends the game if an exception is raised.
     :return: None
     """
 
-    if hasattr(sys, 'last_value'):  # An exception has been raised; end the game
+    exc = sys.exc_info()
 
-        #if not allow_missing_functions and not "'module' object has no attribute" in str(sys.last_value):
+    if exc[0]:  # An exception has been raised; end the game
+
+        print(exc)
+
+        # if not allow_missing_functions and not "'module' object has no attribute" in str(sys.last_value):
         # It's an actual error, not just an object's function that hasn't been implemented
 
         logic.endGame()
+
+
+def mutate(intended_class, obj=None):
+
+    """
+    Mutates the object into an instance of the intended class.
+    :param intended_class: class - The kind of class you want the object to override and become one of.
+    :param obj: KX_GameObject - The object to mutate. If not specified or left to None,
+    then it will use the calling object.
+    :return: intended_class
+    """
+
+    if obj is None:
+
+        obj = logic.getCurrentController().owner
+
+    if isinstance(obj, intended_class):
+
+        return obj
+
+    else:
+
+        return intended_class(obj)
