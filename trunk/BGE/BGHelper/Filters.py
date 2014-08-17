@@ -1788,7 +1788,7 @@ def pixellate(resolution_x=320, resolution_y=240):
     """)
 
 
-def pixellatefactor(px_x=4, px_y=4):
+def pixellate_factor(px_x=4, px_y=4):
     """
     A pixellation filter that uses factor values instead of resolution sizes.
 
