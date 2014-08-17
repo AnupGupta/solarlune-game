@@ -3,7 +3,7 @@ import mathutils
 from bge import logic, render
 
 
-def Lerp(a, b, scalar):
+def lerp(a, b, scalar):
     """Lerp - Linearly interpolates between 'a'
     when 'scalar' is 0 and 'b' when 'scalar' is 1.
     a = number or Vector
@@ -13,7 +13,7 @@ def Lerp(a, b, scalar):
     return (a + scalar * (b - a))
 
 
-def Clamp(value, minimum, maximum):
+def clamp(value, minimum, maximum):
     """
     Clamp: Clamps the specified 'value' between the maximum and minimum values.
     Returns 'max' when 'value' is greater than 'max', 'min' when 'value' is less than 'min',
@@ -22,7 +22,7 @@ def Clamp(value, minimum, maximum):
     return (min(max(value, minimum), maximum))
 
 
-def Sign(value):
+def sign(value):
     """
     Returns the sign of the inputted 'value'; i.e. 5 = 1, -9.1 = -1, 0 = 0
     """
@@ -34,7 +34,7 @@ def Sign(value):
         return 0
 
 
-def RayCastLine(anglevect, anglewidth, topos, frompos=None, raynum=3,
+def raycast_line(anglevect, anglewidth, topos, frompos=None, raynum=3,
                 center=1, from_scalar=1.0, to_scalar=1.0, dist=0, prop='', face=1, xray=1,
                 poly=0, obj=None, debug=False, objdebug=None):
     """

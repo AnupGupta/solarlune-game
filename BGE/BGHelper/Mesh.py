@@ -24,14 +24,14 @@ import operator
 from bge import logic, constraints, types, render
 import mathutils
 
-from .Math import Sign
+from .Math import sign
 
 lib_new_counter = 0
 
 # Helper classes
 
 
-class CPolygon():
+class Polygon():
 
     def __init__(self, polygon):
 
@@ -81,7 +81,7 @@ class CPolygon():
     position = property(get_position)
 
 
-class CMesh():
+class Mesh():
 
     def __init__(self, mesh_data):
 
@@ -98,7 +98,7 @@ class CMesh():
 
         for p in range(self.mesh_data.numPolygons):
 
-            poly = CPolygon(self.mesh_data.getPolygon(p))
+            poly = Polygon(self.mesh_data.getPolygon(p))
 
             rpos_x = poly.position.x
             rpos_y = poly.position.y
@@ -560,7 +560,6 @@ def unflatten_all(destination):
             vert.setXYZ([0, 0, 0])
 
             destination['vertsavailable'][m][v] = 1
-
 
 
 # Waves

@@ -50,7 +50,7 @@ class Scenes:
 scenes = Scenes()
 
 
-class CCallback(object):
+class Callback(object):
     """
     A callback class for making callback objects. These objects are useful for telling when a value changes - for example, you
     could use a callback to tell when the Player collides with an object other than the one he is currently colliding with (None, if
@@ -148,7 +148,7 @@ class CCallback(object):
                 call[3] = value
 
 
-callbacks = CCallback()
+callbacks = Callback()
 
 
 def end_game_on_exception():

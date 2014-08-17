@@ -36,6 +36,17 @@ class LightManager():
                                 'spot': [],
         }
 
+        self.default_energy = 2.0  # Default values for lights that can be overridden by
+        # putting values in the dynamic light polling objects themselves (TODO: Actually implement that)
+
+        self.default_distance = 10.0
+
+        self.default_color = [1, 1, 1]
+
+        self.default_spotsize = 45
+
+        self.default_spotblend = 0.25
+
     def update(self, ref_obj=None, scene=None):
 
         """
@@ -79,7 +90,7 @@ class LightManager():
                     cur_light.worldPosition = node.worldPosition
                     cur_light.worldOrientation = node.worldOrientation
 
-                    cur_light.energy = 4.0  # TODO: Link these to the node objects or their group objects if possible
+                    cur_light.energy = self.default_energy  # TODO: Link these to the node objects or their group objects if possible
 
     def poll(self, scene=None):
 

@@ -29,13 +29,13 @@ class CAudioDevice():
         self.current_bgm_handle = None
         self.current_bgm = None
 
-    def play_bgm(self, bgm, loop=1):
+    def play_bgm(self, bgm, loop=1, volume_base=1.0):
 
         if bgm != self.current_bgm:
             self.current_bgm = bgm
             self.current_bgm_handle = self.device.play(self.sounds[bgm])
             self.current_bgm_handle.loop_count = -1
-            self.current_bgm_handle.volume = logic.settings['bgm_vol']
+            self.current_bgm_handle.volume = volume_base
             return self.current_bgm_handle
 
         return None
@@ -46,10 +46,10 @@ class CAudioDevice():
             self.current_bgm = None
             self.current_bgm_handle.stop()
 
-    def play_sound(self, sound, volume_var=0.1, pitch_var=.1):
+    def play_sound(self, sound, volume_base=1.0, volume_var=0.1, pitch_var=.1):
         handle = self.device.play(self.sounds[sound])
         handle.volume += random.uniform(-volume_var, volume_var)
-        handle.volume *= logic.settings['sound_vol']
+        handle.volume *= volume_base
         handle.pitch += random.uniform(-pitch_var, pitch_var)
         return handle
 

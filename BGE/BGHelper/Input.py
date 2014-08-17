@@ -33,7 +33,7 @@ on the hats are bit values; you're not meant to use the diagonals directly).
 10/2/13: Updated input methods to drop the need to use states for each individual binding
 (i.e. JumpPressed and JumpDown). Now you just specify the type of binding it is when you add it (KEY for keyboard,
 JOYBUTTON for joystick button, etc.), and then use the input device itself to check the state. There are three
-functions for this process now - BindDown, BindPressed, and BindReleased. Each function will return the state of the
+functions for this process now - bind_down, bind_pressed, and bind_released. Each function will return the state of the
 binding should the state you specify be true (i.e. if the input is being held, then it will return the value of that
 input. For a key or a button, it would be 1.0 or 0. For an axis, it would be a number indicating how far that axis
 is being pressed).
@@ -212,7 +212,7 @@ JPXbox360 = _JP_Xbox360()
 
 # Input classes
 
-class CInputKey():
+class InputKey():
     """
     Tests for input from keyboard and joystick.
     """
@@ -346,7 +346,7 @@ class CInputKey():
         self.prevstate = self.active
 
 
-class CInputDevice():
+class InputDevice():
     """
     A class for testing for input from different devices. Useful if you want to easily set up different bindings
     for your input.
@@ -430,7 +430,7 @@ class CInputDevice():
 
             self.bindings[bindingname] = {'active': 0.0, 'type': KEY, 'state': 0}
 
-        self.events[group][bindingname].append(CInputKey(inputtype, keycode, axisdir, deadzone, joyindex, scalar))
+        self.events[group][bindingname].append(InputKey(inputtype, keycode, axisdir, deadzone, joyindex, scalar))
 
     def poll(self, group=None):
 
