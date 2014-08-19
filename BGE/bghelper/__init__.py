@@ -16,14 +16,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 P.S. It would be nice if you could attribute me for the creation of this and my other scripts. Thanks!
 """
 
-from . import API
-from . import Audio
-from . import Filters
-from . import Game
+from . import api
+from . import audio
+from . import filters
+from . import game
 from . import input
 from . import light
 from . import math
 from . import mesh
+from . import nodemap
 from . import rlg
 from . import sprites
 from . import trail
