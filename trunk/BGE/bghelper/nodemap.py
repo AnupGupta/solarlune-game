@@ -2,9 +2,7 @@ __author__ = 'SolarLune'
 
 from bge import logic, render
 
-import mathutils
-
-import math, time
+import math,time
 
 
 class Node():
@@ -19,7 +17,9 @@ class Node():
 
         self.neighbors = []
 
-        self.cost = 1
+        #self.cost = 1
+
+        self.costs = []
 
         self.parent = None  # Parent node for path-finding
 
@@ -27,27 +27,103 @@ class Node():
         #self.f_score = 0
         #self.h_score = 0
 
-    def __get_cost(self):
+    def reset_costs(self, cost_num):
 
-        if 'nm_cost' in self.obj:
+        self.costs = [0 for x in range(cost_num)]
 
-            return self.obj['nm_cost']
+    def set_cost(self, value, cost_index=0):
 
-        return self._cost
+        self.costs[cost_index] = value
 
-    def __set_cost(self, value):
+    def get_cost(self, cost_index=0):
 
-        self._cost = value
+        return self.costs[cost_index]
 
-    cost = property(__get_cost, __set_cost)
+    def add_cost(self, value, cost_index=0):
+
+        self.costs[cost_index] += value
+
+    def sub_cost(self, value, cost_index=0):
+
+        self.costs[cost_index] -= value
+
+
+class Path():
+
+    def __init__(self, path):
+
+        self.points = path[:]
+        self.temp_points = self.points[:]
+
+    def on_reached_end(self):
+
+        pass
+
+    def navigate(self, turn_spd=0.0, accel_spd=1.0, max_spd=10.0, friction=1.0, close_enough=0.5, obj=None):
+
+        if obj is None:
+
+            obj = logic.getCurrentController().owner
+
+        else:
+
+            obj = obj
+
+        if len(self.temp_points) > 0:
+
+            next_point = self.temp_points[0].obj.worldPosition
+
+            next_dir = obj.getVectTo(next_point)[1]
+
+            vel = obj.worldLinearVelocity.copy()
+
+            vel.z = 0.0
+
+            vel.magnitude -= friction if vel.magnitude > friction else vel.magnitude
+
+            vel.xy += next_dir.xy * (accel_spd + friction)
+
+            if (obj.worldLinearVelocity.xy + vel.xy).magnitude < (max_spd):
+
+                obj.worldLinearVelocity.xy = vel.xy
+
+            if (obj.worldPosition - next_point).magnitude < close_enough:
+
+                self.temp_points.pop(0)
+
+        else:
+
+            print('done')
+
+            self.on_reached_end()
+
+            vel = obj.worldLinearVelocity.copy()
+            vel.magnitude -= friction if vel.magnitude > friction else vel.magnitude
+            obj.worldLinearVelocity.xy = vel.xy
+
+    def reset_path(self):
+
+        self.temp_points = self.points[:]
+
 
 class NodeMap():
 
-    def __init__(self):
+    def __init__(self, cost_num=1):
 
         self.nodes = []
 
+        self.cost_num = cost_num  # Number of costs per node; useful if you need multiple
+        #  costs for different values (terrain, risk, wants, dislikes, etc)
+
     def add_node(self, node):
+
+        """
+        Adds the node to the nodemap. Also adds cost slots to the node.
+        :param node:
+        :return:
+        """
+
+        node.reset_costs(self.cost_num)
 
         self.nodes.append(node)
 
@@ -107,7 +183,11 @@ class NodeMap():
 
         return closest
 
-    def path_to(self, ending_point, starting_point=None, max_check_num=1000):
+    def get_path_to(self, ending_point, starting_point=None, max_check_num=1000, cost_coefficient=None):
+
+        if cost_coefficient is None:
+
+            cost_coefficient = [1 for x in range(self.cost_num)]
 
         if starting_point is None:
 
@@ -115,6 +195,12 @@ class NodeMap():
 
         goal = self.get_closest_node(ending_point)
         starting_node = self.get_closest_node(starting_point)
+
+        def get_f_score(node):
+
+            costs = [x*y for x,y in zip(node.costs, cost_coefficient)]
+
+            return (starting_node.obj.position - node.obj.position).magnitude + (node.obj.position - goal.obj.position).magnitude + sum(costs)
 
         if not goal:
 
@@ -125,18 +211,6 @@ class NodeMap():
 
             print("ERROR: STARTING NODE CANNOT BE REACHED FROM ANY NODE ON MAP.")
             return
-
-        def get_g_score(node):
-
-            return (starting_node.obj.position - node.obj.position).magnitude
-
-        def get_h_score(node):
-
-            return (node.obj.position - goal.obj.position).magnitude
-
-        def get_f_score(node):
-
-            return get_g_score(node) + get_h_score(node) + node.cost
 
         open_list = [starting_node]
         closed_list = []
@@ -164,21 +238,9 @@ class NodeMap():
 
                     if neighbor == goal:
 
-                        print("A Path has been found!")
-
-                        exit_loop = True
+                        exit_loop = True  # A path has been found
 
                         break
-
-                #else:
-
-                    #if get_g_score(current_node) + neighbor.g_score < neighbor.g_score
-
-                    #costs[neighbor] = {'F':get_f_score(neighbor), 'G':get_g_score(neighbor), 'H':get_h_score()}
-
-                #else:
-
-                #    if get_g_score(neighbor)
 
             if exit_loop:
 
@@ -198,7 +260,25 @@ class NodeMap():
 
             target_square = target_square.parent
 
-        return path
+        path.reverse()  # Go from the start to the goal
+
+        if len(path):
+
+            return Path(path)  # Create a path object
+
+        else:
+
+            print("No path found")
+
+    def get_path_costs(self, path):
+
+        costs = [0 for x in range(self.cost_num)]
+
+        for node in path.points:
+
+            costs = [x + y for x, y in zip(costs, node.costs)]
+
+        return costs
 
     def debug_node_connections(self):
 
@@ -212,7 +292,7 @@ class NodeMap():
 
         #print("______")
 
-        for node in path:
+        for node in path.points:
 
             #print(node.obj)
 
