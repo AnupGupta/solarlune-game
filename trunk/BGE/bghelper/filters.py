@@ -42,22 +42,23 @@ from bge import logic
 ### Filters
 
 
-def readdepths():
+def read_depths():
     script = """
 
     uniform sampler2D bgl_DepthTexture;
 
+    float linearize(float depth)
+    {
+
+        float near = 1.0;  // Near plane
+        float far = 100.0; // Far plane
+        return (-far * near) / (depth * (far - near) - far);
+
+    }
+
     void main(void)
     {
-        vec4 color = texture2D(bgl_DepthTexture, gl_TexCoord[0].st);
-
-        float value = (color.r + color.g + color.b) / 3.0;
-
-        float factor = (1.000 - value) * 16.0000;
-
-        color -= vec4(factor, factor, factor, factor);
-
-        gl_FragColor = color;
+        gl_FragColor = linearize(texture2D(bgl_DepthTexture, gl_TexCoord[0]).x);
     }
 
     """
@@ -84,9 +85,11 @@ def chromatic(dist=1.0):
 
     vec3 sum = vec3(0.0);
 
-    sum.r = vec3(texture2D(bgl_RenderedTexture, texcoord * 1 + vec2(0.00,0.00))).r;
-    sum.g = vec3(texture2D(bgl_RenderedTexture, texcoord * (1.0 - (0.005 * """ + str(float(dist)) + """)) + vec2(0.002,0.002))).g;
-    sum.b = vec3(texture2D(bgl_RenderedTexture, texcoord * (1.0 - (0.01 * """ + str(float(dist)) + """)) + vec2(0.004,0.004))).b;
+    float d = 0.01 * """ + str(dist) + """;
+
+    sum.r = vec3(texture2D(bgl_RenderedTexture, texcoord)).r;
+    sum.g = vec3(texture2D(bgl_RenderedTexture, (texcoord * (1 + d)) - vec2(d / 2, d / 2) )).g;
+    sum.b = vec3(texture2D(bgl_RenderedTexture, (texcoord * (1 - d)) + vec2(d / 2, d / 2) )).b;
 
     gl_FragColor = vec4(sum, 1.0);
     }
@@ -332,6 +335,8 @@ def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, t
 
         /*float rand(vec2 co) // This used to have highp to indicate the highest quality precision in the variables, but
         {// wouldn't compile after I upgrade graphics card drivers. ?_?
+        // Note that this also made the bloom look pretty tight, but I couldn't
+        // get it to work with the luminance function... :(
             float a = 12.9898;
             float b = 78.233;
             float c = 43758.5453;
@@ -340,11 +345,11 @@ def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, t
             return fract(sin(sn) * c);
         }*/
 
-        float luminance(vec3 rgb){
+        float luminance(vec4 color){
 
-            //const vec3 o = vec3(0.2125,  0.7154, 0.0721);
-            //return dot(rgb, o);
-            return max(max(rgb.r, rgb.b), rgb.b);
+            //return max(max(color.r, color.b), color.g); // Original color-channel-blind luminance
+            return (max(max(color.r, color.b), color.g) + min(min(color.r, color.g), color.b)) / 2; // Newer
+            // color-channel dependent luminance (takes the brightest and darkest colors, and averages them out)
         }
 
         void main()
@@ -362,30 +367,24 @@ def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, t
             float height = 0.01 * """ + str(float(height)) + """ / sample_num_y;  // height = how tall of a sample to use
 
             vec2 tv;
-            float r;
-
             vec4 bloom_col;
 
-            float d = 0.75;
-
             float threshold = """ + str(float(threshold)) + """;
-
-            //r = d + (rand(texcoord.xy) * (1 - d));
 
             for (int i = -sample_num_x; i < sample_num_x; i++)
             {
                 for (int j = -sample_num_y; j < sample_num_y; j++)
                 {
 
-                    //tv.x = texcoord.x + (i * width * r);
-                    //tv.y = texcoord.y + (j * height * r);
-
-                    tv.x = texcoord.x + (i*width);
-                    tv.y = texcoord.y + (j*height);
+                    tv.x = texcoord.x + ((i+0.5)*width);
+                    tv.y = texcoord.y + ((j+0.5)*height);
 
                     bloom_col = texture2D(bgl_RenderedTexture, tv);
 
-                    if (luminance(bloom_col) >= threshold)
+                    float lum = texture2D(bgl_LuminanceTexture, tv).r; // Just use the luminance texture.
+
+                    //if (luminance(bloom_col) >= threshold)
+                    if (lum >= threshold)
                         sum += bloom_col;
                 }
             }
@@ -1513,14 +1512,62 @@ def invert(percentage=1.0):
     """)
 
 
-def blur(distance=1.0, percentage=1.0):
+def blur(blur_width=1.0, blur_height=1.0, sample_num_x=4, sample_num_y=4):
+
     """
     Blur filter.
     distance = distance apart each sample is
     percentage = amount of blurring to apply
+    sample_num_x = number of samples to apply on the X axis
+    sample_num_y = number of samples to apply on the Y axis
 
     Author: SolarLune
-    Date Updated: 6/6/11
+
+    """
+
+    return ("""
+
+    // Name: Simple 16-Sample (Box?) Blur Effect
+    // Author: SolarLune
+    // Date Updated: 6/6/11
+
+    uniform sampler2D bgl_RenderedTexture;
+
+    void main(void)
+    {
+        float blur_width = 0.002 * """ + str(blur_width) + """;
+        float blur_height = 0.002 * """ + str(blur_height) + """;
+
+        int sample_num_x = """ + str(sample_num_x) + """;
+        int sample_num_y = """ + str(sample_num_y) + """;
+
+        vec4 color;
+
+        for (int i = -sample_num_x; i < sample_num_x; i++)
+        {
+            for (int j = -sample_num_y; j < sample_num_y; j++)
+            {
+                color += texture2D(bgl_RenderedTexture, vec2(gl_TexCoord[0].st) + vec2(i * blur_width, j * blur_height));
+            }
+
+        }
+
+        gl_FragColor = color / (sample_num_x*sample_num_y*4);
+
+    }
+    """)
+
+
+def blur_old(distance=1.0, percentage=1.0):
+    """
+    Blur filter.
+    distance = distance apart each sample is
+    percentage = amount of blurring to apply
+    sample_num_x = number of samples to apply on the X axis
+    sample_num_y = number of samples to apply on the Y axis
+
+    Author: SolarLune
+
     """
 
     return ("""
@@ -1828,7 +1875,62 @@ def pixellate_factor(px_x=4, px_y=4):
     """)
 
 
-def radialblur(percentage=1.0, minimum=1.0):
+def radial_blur(blur_width=1.0, blur_height=1.0, sample_num_x=4, sample_num_y=4, center_area=0.0):
+
+    """
+    Blur filter.
+    distance = distance apart each sample is
+    percentage = amount of blurring to apply
+    sample_num_x = number of samples to apply on the X axis
+    sample_num_y = number of samples to apply on the Y axis
+    center_area = what amount of the screen to leave unblurred, from the center outwards. 0.5 = entire screen
+
+    Author: SolarLune
+
+    """
+
+    return ("""
+
+    // Name: Simple 16-Sample (Box?) Blur Effect
+    // Author: SolarLune
+    // Date Updated: 6/6/11
+
+    uniform sampler2D bgl_RenderedTexture;
+
+    void main(void)
+    {
+
+        vec2 xy = gl_TexCoord[0];
+
+        float blur_width = 0.002 * """ + str(blur_width) + """;
+        float blur_height = 0.002 * """ + str(blur_height) + """;
+
+        int sample_num_x = """ + str(sample_num_x) + """;
+        int sample_num_y = """ + str(sample_num_y) + """;
+
+        vec4 color;
+
+        float blurriness = max(abs(xy.x - 0.5), abs(xy.y - 0.5));
+        blurriness -= """ + str(center_area) + """;
+        blurriness = max(blurriness, 0.0);
+
+        for (int i = -sample_num_x; i < sample_num_x; i++)
+        {
+            for (int j = -sample_num_y; j < sample_num_y; j++)
+            {
+                color += texture2D(bgl_RenderedTexture, vec2(xy) + vec2((i * blurriness) *
+                blur_width, (j * blurriness) * blur_height));
+            }
+
+        }
+
+        gl_FragColor = color / (sample_num_x*sample_num_y*4);
+
+    }
+    """)
+
+
+def radial_blur_old(percentage=1.0, minimum=1.0):
     """
     Why a function? Look at Pixellate above this.
     percentage = amount of blurring to apply - can go above 1 to increase the effect even more so.

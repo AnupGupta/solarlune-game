@@ -23,7 +23,7 @@ P.S. It would be nice if you could attribute me for the creation of this and my 
 """
 Change-log:
 
-11/18/13: Changed order of arguments for CInputDevice constructor.
+11/18/13: Changed order of arguments for InputDevice constructor.
 
 11/9/13: Updated to be able to properly handle joystick hat input correctly (the four directions
 on the hats are bit values; you're not meant to use the diagonals directly).
@@ -38,10 +38,10 @@ binding should the state you specify be true (i.e. if the input is being held, t
 input. For a key or a button, it would be 1.0 or 0. For an axis, it would be a number indicating how far that axis
 is being pressed).
 
-Check the BGInput example to see how it works.
+Check the BGinput example to see how it works.
 """
 
-# Input constants
+# input constants
 
 KEY = 0  # Different input types; Keyboard key
 JOYBUTTON = 1  # Joystick button
@@ -172,13 +172,13 @@ JPChillstream = _JP_Chillstream
 
 class _JP_Xbox360():
     """
-    Joystick profile for an XBOX 360 or otherwise X-Input controller.
+    Joystick profile for an XBOX 360 or otherwise X-input controller.
 
     Note that the triggers are implemented as a single axis; the controls don't seem to add up correctly (i.e.
     LT = axis 5 < 0, RT = axis 5 > 0; added together, they approach 0...). There's no alternative way to tell
     which axis is being pressed, either. :1
 
-    Note that this should be the profile used for X-Input controllers, even if they aren't XBOX 360 controllers,
+    Note that this should be the profile used for X-input controllers, even if they aren't XBOX 360 controllers,
     like the Logitech F310.
     """
 
@@ -210,7 +210,7 @@ class _JP_Xbox360():
 JPXbox360 = _JP_Xbox360()
 
 
-# Input classes
+# input classes
 
 class InputKey():
     """
@@ -222,7 +222,7 @@ class InputKey():
         """
         A input handling object.
 
-        inputtype = input type from CInputKey (CInputKey.KEYDOWN, for example)
+        inputtype = input type from CinputKey (CinputKey.KEYDOWN, for example)
         keycode = key, axis, hat, or button code for the input device (for example, events.XKEY, 5 for the fifth button
         on a joystick, etc.)
         axisdirection = direction to check for axis values for joystick and mouse axis checks.
@@ -351,7 +351,7 @@ class InputDevice():
     A class for testing for input from different devices. Useful if you want to easily set up different bindings
     for your input.
 
-    Basically, you add the inputs via their inputtype (retrieved from CInputKey's input type constant definitions)
+    Basically, you add the inputs via their inputtype (retrieved from CinputKey's input type constant definitions)
     with the keycode that you need.
 
     You can also specify a group for each binding entry (i.e. you can add keyboard and joystick controls separately.)
@@ -364,7 +364,7 @@ class InputDevice():
 
     -------------
 
-    device = CInputDevice()
+    device = InputDevice()
 
     device.add('jump', KEY, events.ZKEY, 'keyboard')
 
@@ -384,9 +384,9 @@ class InputDevice():
         """
         Example code usage:
 
-        device = CInputDevice()
+        device = InputDevice()
 
-        device.Add('jump', BGInput.KEYPRESSED, events.ZKEY, 'keyboard')
+        device.Add('jump', BGinput.KEYPRESSED, events.ZKEY, 'keyboard')
 
         device.Poll('keyboard')
 
@@ -404,7 +404,7 @@ class InputDevice():
         Add a key binding.
 
         bindingname = name of the binding to create (i.e. 'left', 'jump', 'run', 'interact'...)
-        inputtype = input type from CInputKey (CInputKey.KEYDOWN, for example)
+        inputtype = input type from CinputKey (CinputKey.KEYDOWN, for example)
         keycode = key, axis, hat, or button code for the input device (for example, events.XKEY, 5 for the fifth button on a joystick, etc.)
 
         group = a string that designates what group to add this binding to. For example, you might add all of the joystick

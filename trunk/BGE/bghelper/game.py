@@ -68,3 +68,4 @@ def mouse_look(obj=None, accel_speed=1.0, max_speed=45.0, friction=8.0, lock=ML_
             speed.magnitude = 0.0
 
         logic.mouse.position = .5, .5
+
