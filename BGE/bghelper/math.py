@@ -69,7 +69,7 @@ def raycast_line(anglevect, anglewidth, topos, frompos=None, raynum=3,
     xray = whether to go through objects that don't match the property criteria (objects that don't have the property
     named by 'prop')
 
-    poly = whether to return the polygon / UV hit; check the API documentation for more information
+    poly = whether to return the polygon / UV hit; check the api documentation for more information
 
     obj = object to use for the ray casts; if left set to default (None), then it will use whatever object is calling
     the function.
@@ -92,14 +92,14 @@ def raycast_line(anglevect, anglewidth, topos, frompos=None, raynum=3,
 
     dist = 0.5 + abs(obj.worldLinearVelocity.z)
 
-    ground = BGHelper.RaycastLine(obj.worldOrientation.col[0], width, topos, frompos, 3, 1, dist, 'ground', debug = 1)[0]
+    ground = bghelper.RaycastLine(obj.worldOrientation.col[0], width, topos, frompos, 3, 1, dist, 'ground', debug = 1)[0]
 
     This will cast three rays in a straight line, with the center one being below the object's world position. Debug is on,
     so it will draw the lines visibly onscreen (barring a bug with the render engine about drawing lines with overlay or
     underlay scenes activated). It will return an object with the 'ground' property, if it finds one. If so, then it will
     return a list consisting of the successful raycast and its starting and ending position (i.e. [ray, topos, frompos]).
     Otherwise, it will return a list consisting of a list with a None in it, and two other Nones (i.e. [[None], None, None]).
-    This way you can check: if BGHelper.LineRayCast()[0] == None to see if the ray was successful (or any other index of the
+    This way you can check: if bghelper.LineRayCast()[0] == None to see if the ray was successful (or any other index of the
     returned list).
 
     """

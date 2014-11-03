@@ -34,6 +34,9 @@ import copy
 from bge import logic
 import mathutils
 
+from .mesh import get_dimensions
+from .math import clamp
+
 ### CONSTANTS ###
 
 GN_CONNECTION_STYLE_ONE = 0  # Connection styles for the GenNodes function; ONE = all nodes connect to another one (other than themselves) randomly
@@ -57,52 +60,8 @@ GSC_EDGE_WRAP = 3
 
 #### Helper Functions ####
 
-def GetDimensions(object, roundit=3, mesh=None):
-    """
-    Gets the dimensions of the object (what you see under dimensions in the properties window in the 3D menu).
-    object = which object to use; note that it will by default use the first mesh; you can specify which mesh by providing the mesh
-    via the mesh property.
-    roundit = how far down to round the returned dimension values; set it to a negative number to not round the numbers off at all.
-    """
 
-    s = object.worldScale
-
-    if mesh == None:
-        mesh = object.meshes[0]
-
-    #print (dir(mesh))
-
-    verts = [[], [], []]
-
-    for v in range(mesh.getVertexArrayLength(0)):
-        vert = mesh.getVertex(0, v)
-
-        pos = vert.getXYZ()
-
-        verts[0].append(pos[0])
-        verts[1].append(pos[1])
-        verts[2].append(pos[2])
-
-    verts[0].sort()
-    verts[1].sort()
-    verts[2].sort()
-
-    if roundit >= 0:
-        size = [
-            round((verts[0][len(verts[0]) - 1] - verts[0][0]) * s[0], roundit),
-            round((verts[1][len(verts[0]) - 1] - verts[1][0]) * s[1], roundit),
-            round((verts[2][len(verts[0]) - 1] - verts[2][0]) * s[2], roundit)]
-    else:
-        size = [(verts[0][len(verts[0]) - 1] - verts[0][0]) * s[0],
-                (verts[1][len(verts[0]) - 1] - verts[1][0]) * s[1],
-                (verts[2][len(verts[0]) - 1] - verts[2][0]) * s[2]]
-
-    #print (size)
-
-    return (size)
-
-
-def GetSurroundingCells(room, celly, cellx, ignore=0, edge=0):
+def get_surrounding_cells(room, cell_y, cell_x, ignore=0, edge=0):
     """
 
     Author : SolarLune
@@ -132,53 +91,53 @@ def GetSurroundingCells(room, celly, cellx, ignore=0, edge=0):
 
     """
 
-    if cellx > 0:
-        left = room[celly][cellx - 1]
+    if cell_x > 0:
+        left = room[cell_y][cell_x - 1]
     else:
         if edge == 0:  # Blank
             left = 0
         elif edge == 1:  # Void
             left = None
         elif edge == 2:  # Extend
-            left = room[celly][cellx]
+            left = room[cell_y][cell_x]
         elif edge == 3:  # Wrap
-            left = room[celly][len(room[celly]) - 1]
+            left = room[cell_y][len(room[cell_y]) - 1]
 
-    if cellx < len(room[celly]) - 1:
-        right = room[celly][cellx + 1]
+    if cell_x < len(room[cell_y]) - 1:
+        right = room[cell_y][cell_x + 1]
     else:
         if edge == 0:
             right = 0
         elif edge == 1:
             right = None
         elif edge == 2:
-            left = room[celly][cellx]
+            left = room[cell_y][cell_x]
         elif edge == 3:
-            right = room[celly][0]
+            right = room[cell_y][0]
 
-    if celly > 0:
-        up = room[celly - 1][cellx]
+    if cell_y > 0:
+        up = room[cell_y - 1][cell_x]
     else:
         if edge == 0:
             up = 0
         elif edge == 1:
             up = None
         elif edge == 2:
-            left = room[celly][cellx]
+            left = room[cell_y][cell_x]
         elif edge == 3:
-            up = room[len(room) - 1][cellx]
+            up = room[len(room) - 1][cell_x]
 
-    if celly < len(room) - 1:
-        down = room[celly + 1][cellx]
+    if cell_y < len(room) - 1:
+        down = room[cell_y + 1][cell_x]
     else:
         if edge == 0:
             down = 0
         elif edge == 1:
             down = None
         elif edge == 2:
-            left = room[celly][cellx]
+            left = room[cell_y][cell_x]
         elif edge == 3:
-            down = room[0][cellx]
+            down = room[0][cell_x]
 
 
     #print (down)
@@ -190,38 +149,30 @@ def GetSurroundingCells(room, celly, cellx, ignore=0, edge=0):
     return ({'cells': {'left': left, 'right': right, 'up': up, 'down': down}, 'num': num})
 
 
-def Clamp(value, minimum, maximum):
-    """
-    Clamp: Clamps the specified 'value' between the maximum and minimum values.
-    Returns 'max' when 'value' is greater than 'max', 'min' when 'value' is less than 'min',
-    and 'value' itself when neither is true.
-    """
-    return (min(max(value, minimum), maximum))
-
-
 # ~~~~ Generation Functions ~~~~~
 
-def GenLine(xsize=9, ysize=9, line_y=None, randseed=None, linetypes=[1], filltypes=[2], emptytypes=[0], roomlist=None):
+def gen_line(size_x=9, size_y=9, line_y=None, random_seed=None, line_types=[1], fill_types=[2], empty_types=[0], room_list=None):
+
     randomstate = random.getstate()  # Used to preserve random settings before using the function
 
-    random.seed(randseed)  # Set the seed, if there is one
+    random.seed(random_seed)  # Set the seed, if there is one
 
-    if roomlist == None:
+    if room_list is None:
 
         room = []
 
-        for y in range(ysize):  # Create empty rooms
+        for y in range(size_y):  # Create empty rooms
             room.append([])
-            for x in range(xsize):
-                room[y].append(random.choice(emptytypes))
+            for x in range(size_x):
+                room[y].append(random.choice(empty_types))
 
     else:
 
-        room = copy.deepcopy(roomlist)
+        room = copy.deepcopy(room_list)
 
-    if line_y == None:
+    if line_y is None:
 
-        ly = ysize // 2 + random.randint(-ysize // 4, ysize // 4)
+        ly = size_y // 2 + random.randint(-size_y // 4, size_y // 4)
 
     else:
 
@@ -233,11 +184,11 @@ def GenLine(xsize=9, ysize=9, line_y=None, randseed=None, linetypes=[1], filltyp
 
             if y == ly:
 
-                room[y][x] = random.choice(linetypes)
+                room[y][x] = random.choice(line_types)
 
             elif y < ly:
 
-                room[y][x] = random.choice(filltypes)
+                room[y][x] = random.choice(fill_types)
 
         r = random.random
         ly -= int(round(r()))
@@ -254,7 +205,7 @@ def GenLine(xsize=9, ysize=9, line_y=None, randseed=None, linetypes=[1], filltyp
     return room
 
 
-def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0, roomtypes=[1], roomlist=None):
+def gen_growth(size_x=9, size_y=9, maxnum=0, random_seed=None, must_connect=1, maxcon=0, roomtypes=[1], room_list=None):
     """
 
         2D RANDOM ROOM GENERATOR
@@ -264,13 +215,13 @@ def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0
 
         xsize = X-size of the randomly generated room
 
-        ysize = Y-size of the randomly generated room
+        size_y = Y-size of the randomly generated room
 
         Note that if you use an even number, then there's no middle cell, so you can't be exactly sure which cell WILL be filled.
 
         maxnum = Maximum number of rooms; by default will make half of the total rooms populated (i.e. 5x5 = 25 / 2 = ~13)
 
-        randseed = Random seed value; this will (hopefully) make it so that each randomly generated map can be the same with a specific seed
+        random_seed = Random seed value; this will (hopefully) make it so that each randomly generated map can be the same with a specific seed
 
         maxcon = Maximum connections each room can have. Hallways can only have one other connection,
         for example, and the default is 0, which is as many as possible (yes, hallways actually have two,
@@ -280,23 +231,23 @@ def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0
         generation will contain random selections of these numbers. So, if you wanted a map of sand, grass, and concrete,
         you could make a list of three numbers, and replace those numbers with the correct values later on
 
-        roomlist = A previous room list (maybe you have a list that you got and want to add on values, or change the theme by using the same seed
-        as before and using different 'roomtypes'. Beware - ensuring that the roomlist is the correct size is up to you.
+        room_list = A previous room list (maybe you have a list that you got and want to add on values, or change the theme by using the same seed
+        as before and using different 'roomtypes'. Beware - ensuring that the room_list is the correct size is up to you.
     """
 
     currentnum = 0
 
-    if roomlist == None:
+    if room_list is None:
 
         room = []
 
-        for y in range(ysize):  # Create empty rooms
+        for y in range(size_y):  # Create empty rooms
             room.append([])
-            for x in range(xsize):
+            for x in range(size_x):
                 room[y].append(0)
     else:
 
-        room = roomlist[:]
+        room = room_list[:]
 
         roomnumbers = 0
 
@@ -311,11 +262,11 @@ def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0
 
     randomstate = random.getstate()  # Used to preserve random settings before using the function
 
-    random.seed(randseed)  # Set the seed, if there is one
+    random.seed(random_seed)  # Set the seed, if there is one
 
-    if mustconnect and currentnum == 0:
-        middley = math.floor(ysize / 2.0)  # Set the middle cell to be filled
-        middlex = math.floor(xsize / 2.0)
+    if must_connect and currentnum == 0:
+        middley = math.floor(size_y / 2.0)  # Set the middle cell to be filled
+        middlex = math.floor(size_x / 2.0)
         room[middley][middlex] = random.choice(roomtypes)
 
         currentnum += 1
@@ -323,7 +274,7 @@ def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0
     if maxnum > 0:
         maxsize = maxnum
     else:
-        maxsize = (xsize * ysize) / 2
+        maxsize = (size_x * size_y) / 2
 
     rlgpass = 0  # Failsafe
 
@@ -334,14 +285,14 @@ def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0
             currentnum = maxsize
             break
 
-        randomy = math.floor(random.random() * ysize)  # Choose a random cell
-        randomx = math.floor(random.random() * xsize)
+        randomy = math.floor(random.random() * size_y)  # Choose a random cell
+        randomx = math.floor(random.random() * size_x)
 
         if room[randomy][randomx] == 0:  # Don't set a cell more than once
 
-            if mustconnect:
+            if must_connect:
 
-                sur = GetSurroundingCells(room, randomy, randomx)
+                sur = get_surrounding_cells(room, randomy, randomx)
 
                 cellaround = 0  # If there's a connection around the current cell
 
@@ -371,14 +322,14 @@ def GenGrowth(xsize=9, ysize=9, maxnum=0, randseed=None, mustconnect=1, maxcon=0
     return room
 
 
-def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetypes=[1], halltypes=[1], emptytypes=[0],
+def gen_nodes(size_x=9, size_y=9, nodecount=None, spacing=1, random_seed=None, nodetypes=[1], halltypes=[1], empty_types=[0],
              straight_halls=False, connection_style=GN_CONNECTION_STYLE_ONE,
-             room_style=GN_ROOM_STYLE_SQUARE, min_room_size=2, max_room_size=5, roomlist=None):
+             room_style=GN_ROOM_STYLE_SQUARE, min_room_size=2, max_room_size=5, room_list=None):
     """
 
     This method of random generation spawns several nodes, and then connects those nodes with halls.
 
-    x, ysize = size of the generated list
+    x, size_y = size of the generated list
 
     nodecount = number of nodes to spawn; defaults to half of the width of the room.
 
@@ -390,13 +341,13 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
     Note! If spacing is too large and the room has too small a size, it will basically be tried for, but otherwise
     the room will generate however it can. Use small spacing amounts and large rooms.
 
-    randseed = random seed for spawning the same list each time
+    random_seed = random seed for spawning the same list each time
 
     nodetypes = a list of different (randomly chosen) numbers that can spawn for the nodes separating halls
 
     halltypes = a list of different (randomly chosen) numbers that can spawn for the halls in-between nodes
 
-    emptytypes = a list of different (randomly chosen) numbers that can spawn for the non-hall or node spots
+    empty_types = a list of different (randomly chosen) numbers that can spawn for the non-hall or node spots
 
     straight_halls = determines if the hallways basically only bend once max, or if they "stair-step" between nodes
 
@@ -418,60 +369,60 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
 
     min_room_size, max_room_size = determines how large each node room can be minimum and maximum
 
-    roomlist = preexisting list to use; numbers that are specified in nodetypes are interpreted as nodes, numbers
-    that are in halltypes are interpreted as halls, and numbers that are in emptytypes are interpreted as "empties".
+    room_list = preexisting list to use; numbers that are specified in nodetypes are interpreted as nodes, numbers
+    that are in halltypes are interpreted as halls, and numbers that are in empty_types are interpreted as "empties".
     The nodecount you specify is added to the existing nodes you have pre-existing in the room list.
     """
 
-    if roomlist != None:
+    if room_list != None:
 
-        if not isinstance(roomlist, list):
-            print("ERROR: Provided roomlist is not a list")
+        if not isinstance(room_list, list):
+            print("ERROR: Provided room_list is not a list")
 
             return []
 
-        maplist = roomlist
-        middle = [xsize // 2, ysize // 2]
+        maplist = room_list
+        middle = [size_x // 2, size_y // 2]
 
-        ysize = len(maplist)
-        xsize = len(maplist[0])
+        size_y = len(maplist)
+        size_x = len(maplist[0])
 
     else:
 
         maplist = []
 
-        for j in range(ysize):
+        for j in range(size_y):
 
             maplist.append([])
 
-            for i in range(xsize):
-                maplist[j].append(random.choice(emptytypes))
+            for i in range(size_x):
+                maplist[j].append(random.choice(empty_types))
 
-        #maplist = [[random.choice(emptytypes) for j in range(xsize)] for i in range(ysize)]
+        #maplist = [[random.choice(empty_types) for j in range(xsize)] for i in range(size_y)]
 
-        middle = [xsize // 2, ysize // 2]
+        middle = [size_x // 2, size_y // 2]
 
     randomstate = random.getstate()
 
-    random.seed(randseed)
+    random.seed(random_seed)
 
     #maplist[middle[1]][middle[0]] = random.choice(
 
     nodelist = []  # List of nodes
     toconnect = {}  # List of nodes that are still up for connections and their connection counts
 
-    if nodecount == None:
-        ndc = int(xsize / 2)
+    if nodecount is None:
+        ndc = int(size_x / 2)
     else:
         ndc = nodecount
 
-    if roomlist:
+    if room_list:
 
         list_node_count = 0
 
-        for c in range(len(roomlist)):
-            for x in range(len(roomlist[c])):
-                if roomlist[c][x] in nodetypes:
+        for c in range(len(room_list)):
+            for x in range(len(room_list[c])):
+                if room_list[c][x] in nodetypes:
                     node = (c, x)
                     nodelist.append(node)
                     toconnect[node] = []
@@ -484,12 +435,12 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
 
         if spacing <= 0:
 
-            while (node == None):
+            while (node is None):
 
                 cy = random.choice(range(len(maplist)))
                 cx = random.choice(range(len(maplist[cy])))
 
-                #if maplist[cy][cx] in emptytypes:
+                #if maplist[cy][cx] in empty_types:
                 if not maplist[cy][cx] in nodetypes:
                     node = (cy, cx)
 
@@ -506,7 +457,7 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
                     cy = random.choice(range(len(maplist)))
                     cx = random.choice(range(len(maplist[cy])))
 
-                    #if maplist[cy][cx] in emptytypes or maplist[cy][cx] in halltypes:
+                    #if maplist[cy][cx] in empty_types or maplist[cy][cx] in halltypes:
                     if not maplist[cy][cx] in nodetypes:
                         node = (cy, cx)
 
@@ -546,7 +497,7 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
 
                     for x in range(len(maplist[y])):
 
-                        #cell = roomlist[y][x]
+                        #cell = room_list[y][x]
 
                         if room_style == GN_ROOM_STYLE_ROUND:
 
@@ -569,7 +520,7 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
 
         destnode = None
 
-        while destnode == None:  # Find a destination node
+        while destnode is None:  # Find a destination node
 
             if len(toconnect[node]) >= len(toconnect.keys()) - 1:  # Connected to all available nodes
 
@@ -626,8 +577,8 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
                                 else:
                                     target.y += diff.normalized().y
 
-                            target_rnd = (int(Clamp(round(target[0]), 0, xsize - 1)),
-                                          int(Clamp(round(target[1]), 0, ysize - 1)))
+                            target_rnd = (int(clamp(round(target[0]), 0, size_x - 1)),
+                                          int(clamp(round(target[1]), 0, size_y - 1)))
 
                             if target_rnd == destnode:  #target_floor == destnode or target_ceil == destnode:									# Destination
 
@@ -642,7 +593,7 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
 
                             else:
 
-                                #if maplist[target_rnd[0]][target_rnd[1]] in emptytypes: # Not occupied
+                                #if maplist[target_rnd[0]][target_rnd[1]] in empty_types: # Not occupied
                                 if not maplist[target_rnd[0]][target_rnd[1]] in nodetypes:  # Not occupied
                                     maplist[target_rnd[0]][target_rnd[1]] = random.choice(halltypes)
 
@@ -653,10 +604,10 @@ def GenNodes(xsize=9, ysize=9, nodecount=None, spacing=1, randseed=None, nodetyp
 
 ##### Map population functions #####
 
-def Invert(roomlist, inversion_dict):
+def invert(room_list, inversion_dict):
     """
 
-    Inverts the roomlist provided. Provide a list of what values to invert, and what the inverted value should be.
+    Inverts the room_list provided. Provide a list of what values to invert, and what the inverted value should be.
     For example, for inversion_dict:
 
     {0:1, 3:4, ...}
@@ -675,7 +626,7 @@ def Invert(roomlist, inversion_dict):
 
     """
 
-    l = copy.deepcopy(roomlist)
+    l = copy.deepcopy(room_list)
 
     for y in range(len(l)):
 
@@ -693,7 +644,7 @@ def Invert(roomlist, inversion_dict):
     return l
 
 
-def CleanUp(roomlist):
+def clean_up(room_list):
     """
 
     Cleans up the room list provided so that if there's numbers that are isolated, they are changed to the surrounding number.
@@ -716,7 +667,7 @@ def CleanUp(roomlist):
 
     """
 
-    l = copy.deepcopy(roomlist)
+    l = copy.deepcopy(room_list)
 
     for y in range(len(l)):
 
@@ -724,13 +675,13 @@ def CleanUp(roomlist):
 
             this = l[y][x]
 
-            sur = GetSurroundingCells(roomlist, y, x, this, GSC_EDGE_VOID)
+            sur = get_surrounding_cells(room_list, y, x, this, GSC_EDGE_VOID)
 
             cells = sur['cells']
 
             n = 0
 
-            c = [cells['left'] == None, cells['right'] == None, cells['up'] == None, cells['down'] == None]
+            c = [cells['left'] is None, cells['right'] is None, cells['up'] is None, cells['down'] is None]
 
             for i in c:
 
@@ -751,28 +702,28 @@ def CleanUp(roomlist):
     return l
 
 
-def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, roomceiling={0: None}, point=None,
+def populate(room_list, room_4way, room_straight, room_end, room_corner, room_middle, room_ceiling={0: None}, point=None,
              varying_size=0):
     """
     Populates the in-game world with floor pieces according to the room that you feed into the function.
 
-    roomlist = a room list to check that's generated with a Gen...() function.
+    room_list = a room list to check that's generated with a Gen...() function.
 
-    room4way - roommiddle = dictionaries of room pieces to choose from. The numbered indices correspond to the numbers
+    room_4way - room_middle = dictionaries of room pieces to choose from. The numbered indices correspond to the numbers
     you fed into the generation function. Will be randomly chosen from to allow for some good-looking random level
     design. The dictionaries should look like:
 
-    room4way = {1:['Room4WayRock', 'Room4WayStone', 'Room4WayStone2', etc], 2:[...]}
+    room_4way = {1:['Room4WayRock', 'Room4WayStone', 'Room4WayStone2', etc], 2:[...]}
 
     The number represents the cell type (i.e. a 1 on the grid will spawn one of the rooms in the 1 list)
 
-    room4way = a room with four exits (a cross shape)
-    roomstraight = a room with two exits across from each other
-    roomend = a room with one exit (a dead end)
-    roomcorner = a room with two exits (an L-shaped room)
-    roommiddle = a room with three exits (a T-shaped room)
+    room_4way = a room with four exits (a cross shape)
+    room_straight = a room with two exits across from each other
+    room_end = a room with one exit (a dead end)
+    room_corner = a room with two exits (an L-shaped room)
+    room_middle = a room with three exits (a T-shaped room)
 
-    roomceiling = the same as above, but optional. This would be the objects to place on every null value (i.e. 0)
+    room_ceiling = the same as above, but optional. This would be the objects to place on every null value (i.e. 0)
 
     point = the starting world position of the random room (the center of the map, usually)
 
@@ -787,9 +738,10 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
     The "type" key equals what type of object was spawned based on the random level map's numbers (i.e. it's a 1 if it was spawned
     where a 1 was on the random level map).
 
-    Returns a dictionary comprised of two keys: "spawned", which is all room objects spawned, and "roommap", which is the
-    roomlist that you fed in, but with the values replaced by references to the room objects spawned (useful for
-    storage and looking up a room in the list later)
+    Returns a dictionary comprised of two keys:
+    "spawned: A list of all room objects spawned
+    "room_map": The room_list that you fed in, but with the values replaced by references to the room objects spawned
+    (useful for storage and looking up a room in the list later)
 
     """
 
@@ -799,31 +751,32 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
 
     spawned = []
 
-    rl = copy.deepcopy(roomlist)
+    rl = copy.deepcopy(room_list)
 
     if not varying_size:
-        i = list(room4way.keys())[0]
 
-        r = room4way[i]
+        i = list(room_4way.keys())[0]
 
-        roomsize = GetDimensions(r[0])
+        r = room_4way[i]
 
-    for ry in range(len(roomlist)):
+        roomsize = get_dimensions(r[0])[0]
+
+    for ry in range(len(room_list)):
 
         cy = abs(ry - (len(
-            roomlist) - 1))  # We have to do this because otherwise, the check will go from bottom to top, incorrectly (the data will be turned around)
+            room_list) - 1))  # We have to do this because otherwise, the check will go from bottom to top, incorrectly (the data will be turned around)
 
-        for rx in range(len(roomlist[ry])):
+        for rx in range(len(room_list[ry])):
 
-            if not roomlist[ry][rx] in roomceiling:  # Not blank
+            if not room_list[ry][rx] in room_ceiling:  # Not blank
 
-                cell = roomlist[ry][rx]
+                cell = room_list[ry][rx]
 
-                sur = GetSurroundingCells(roomlist, ry, rx)
+                sur = get_surrounding_cells(room_list, ry, rx)
 
                 if sur['num'] == 1:  # End
 
-                    roomchoice = random.choice(roomend[cell])
+                    roomchoice = random.choice(room_end[cell])
 
                     r = sce.addObject(roomchoice, obj)
                     ori = r.orientation.to_euler()
@@ -850,7 +803,7 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
 
                     if straight:
 
-                        roomchoice = random.choice(roomstraight[cell])
+                        roomchoice = random.choice(room_straight[cell])
 
                         r = sce.addObject(roomchoice, obj)
                         ori = r.orientation.to_euler()
@@ -861,7 +814,7 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
                             ori.z = math.pi / 2.0
                     else:
 
-                        roomchoice = random.choice(roomcorner[cell])
+                        roomchoice = random.choice(room_corner[cell])
 
                         r = sce.addObject(roomchoice, obj)
                         ori = r.orientation.to_euler()
@@ -877,7 +830,7 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
 
                 elif sur['num'] == 3:  # Middle
 
-                    roomchoice = random.choice(roommiddle[cell])
+                    roomchoice = random.choice(room_middle[cell])
                     r = sce.addObject(roomchoice, obj)
                     ori = r.orientation.to_euler()
 
@@ -893,7 +846,7 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
                         ori.z = math.pi
 
                 else:  # 4-way
-                    roomchoice = random.choice(room4way[cell])
+                    roomchoice = random.choice(room_4way[cell])
                     r = sce.addObject(roomchoice, obj)
                     ori = r.orientation.to_euler()
 
@@ -920,12 +873,12 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
                 rl[ry][rx] = r
 
                 if varying_size:
-                    roomsize = GetDimensions(r)
+                    roomsize = get_dimensions(r)
 
-                halfmapw = math.floor(len(roomlist[0]) / 2.0) * roomsize[0]
-                halfmaph = math.floor(len(roomlist) / 2.0) * roomsize[1]
+                halfmapw = math.floor(len(room_list[0]) / 2.0) * roomsize[0]
+                halfmaph = math.floor(len(room_list) / 2.0) * roomsize[1]
 
-                if point == None:
+                if point is None:
                     point = list(obj.worldPosition)
                 else:
                     point = list(point)
@@ -936,22 +889,22 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
 
             else:  # Blank, so it's a ceiling piece.
 
-                if not roomceiling[roomlist[ry][rx]] == None:
+                if not room_ceiling[room_list[ry][rx]] is None:
 
-                    roomchoice = random.choice(roomceiling[roomlist[ry][rx]])
+                    roomchoice = random.choice(room_ceiling[room_list[ry][rx]])
                     r = sce.addObject(roomchoice, obj)
                     spawned.append(r)
 
                     rl[ry][rx] = r
 
-                    rlg_info = {'shape': RLG_POP_CEIL, 'type': roomlist[ry][rx], 'pos': (ry, rx)}
+                    rlg_info = {'shape': RLG_POP_CEIL, 'type': room_list[ry][rx], 'pos': (ry, rx)}
 
                     r['rlg_info'] = rlg_info
 
-                    halfmapw = math.floor(len(roomlist[0]) / 2.0) * roomsize[0]
-                    halfmaph = math.floor(len(roomlist) / 2.0) * roomsize[1]
+                    halfmapw = math.floor(len(room_list[0]) / 2.0) * roomsize[0]
+                    halfmaph = math.floor(len(room_list) / 2.0) * roomsize[1]
 
-                    if point == None:
+                    if point is None:
                         point = list(obj.worldPosition)
                     else:
                         point = list(point)
@@ -960,4 +913,4 @@ def Populate(roomlist, room4way, roomstraight, roomend, roomcorner, roommiddle, 
                            point[2]]
                     r.worldPosition = pos
 
-    return ({'spawned': spawned, 'roommap': rl})
+    return ({'spawned': spawned, 'room_map': rl})

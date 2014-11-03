@@ -161,8 +161,6 @@ def end_game_on_exception():
 
     if exc[0]:  # An exception has been raised; end the game
 
-        print(exc)
-
         # if not allow_missing_functions and not "'module' object has no attribute" in str(sys.last_value):
         # It's an actual error, not just an object's function that hasn't been implemented
 

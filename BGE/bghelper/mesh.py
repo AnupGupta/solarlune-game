@@ -208,6 +208,12 @@ class Mesh():
 
 def make_unique_mesh(mesh):
 
+    """
+    Makes a new mesh with LibNew and returns it.
+    :param mesh: Name of the mesh to duplicate or a pointer to the mesh to duplicate.
+    :return:
+    """
+
     global lib_new_counter
 
     if isinstance(mesh, types.KX_MeshProxy):

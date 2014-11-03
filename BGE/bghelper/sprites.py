@@ -166,7 +166,7 @@ class _spritemap_base():
 
         if not anim_name in self.anim_dict:
 
-            print("ERROR: SpriteMap owner " + self.obj.name + "has no animation named " + anim_name + ".")
+            print("ERROR: SpriteMap owner " + self.obj.name + " has no animation named " + anim_name + ".")
 
             return False
 
@@ -262,6 +262,12 @@ class _spritemap_base():
 
         self.prev_animation = self.current_animation
         self.prev_subimage = self.subimage
+
+        if self.obj.invalid:  # You did something that killed the object; STOP PRODUCTION!
+
+            print("ERROR: SPRITE MAP OPERATING ON NON-EXISTENT OBJECT!!!")
+
+            return False
 
         return True
 
@@ -408,7 +414,7 @@ class SpriteMapMesh(_spritemap_base):
 
         p = super().play(anim_name, reset_subimage_on_change)
 
-        if p == False:
+        if p is False:
             return False
 
         anim = self.anim_dict[self.current_animation]['animation']

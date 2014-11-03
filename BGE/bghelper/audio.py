@@ -46,10 +46,10 @@ class CAudioDevice():
             self.current_bgm = None
             self.current_bgm_handle.stop()
 
-    def play_sound(self, sound, volume_base=1.0, volume_var=0.1, pitch_var=.1):
+    def play_sound(self, sound, volume_base=1.0, volume_var=0.0, pitch_var=.1):
         handle = self.device.play(self.sounds[sound])
-        handle.volume += random.uniform(-volume_var, volume_var)
-        handle.volume *= volume_base
+        handle.volume = volume_base
+        handle.volume += random.uniform(0.0, volume_var)
         handle.pitch += random.uniform(-pitch_var, pitch_var)
         return handle
 
