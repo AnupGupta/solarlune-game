@@ -348,8 +348,11 @@ def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, t
         float luminance(vec4 color){
 
             //return max(max(color.r, color.b), color.g); // Original color-channel-blind luminance
-            return (max(max(color.r, color.b), color.g) + min(min(color.r, color.g), color.b)) / 2; // Newer
+
+            //return (max(max(color.r, color.b), color.g) + min(min(color.r, color.g), color.b)) / 2; // Newer
             // color-channel dependent luminance (takes the brightest and darkest colors, and averages them out)
+
+            return (((color.r*2) + color.b + (color.g*3)) / 6);  // Luminance function taken from StackOverflow
         }
 
         void main()
