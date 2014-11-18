@@ -22,6 +22,27 @@ def clamp(value, minimum, maximum):
     return (min(max(value, minimum), maximum))
 
 
+def wrap(value, minimum, maximum, preserve_remainder=True):
+
+    if value < minimum:
+
+        value = maximum
+
+        if preserve_remainder:
+
+            value -= abs(value - minimum)
+
+    elif value > maximum:
+
+        value = minimum
+
+        if preserve_remainder:
+
+            value += abs(value - maximum)
+
+    return value
+
+
 def sign(value):
     """
     Returns the sign of the inputted 'value'; i.e. 5 = 1, -9.1 = -1, 0 = 0

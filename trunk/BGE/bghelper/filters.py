@@ -373,18 +373,22 @@ def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, t
 
             for (int i = -sample_num_x; i < sample_num_x; i++)
             {
+
                 for (int j = -sample_num_y; j < sample_num_y; j++)
                 {
 
                     tv.x = texcoord.x + ((i+0.5)*width);
                     tv.y = texcoord.y + ((j+0.5)*height);
 
+                    //tv.x = texcoord.x;
+
                     bloom_col = texture2D(bgl_RenderedTexture, tv);
 
-                    float lum = texture2D(bgl_LuminanceTexture, tv).r; // Just use the luminance texture.
+                    //bloom_col = texture2D(bgl_RenderedTexture, vec2(texcoord.x - i, texcoord.y - j));
 
-                    //if (luminance(bloom_col) >= threshold)
-                    if (lum >= threshold)
+                    // float l = texture2D(bgl_LuminanceTexture, tv).r;
+                    // if (l >= threshold)  // Slower to look up a texture than to just run a function to check color values.
+                    if (luminance(bloom_col) >= threshold)
                         sum += bloom_col;
                 }
             }
@@ -398,8 +402,6 @@ def bloom(strength=1.0, width=1.0, height=1.0, sample_num_x=4, sample_num_y=4, t
             bloom.a = 1.0;
 
             gl_FragColor = center + (bloom);	// Usually sum*0.08; 0.08 < is how bright the bloom effect appears on the screen; should probably be around 0.32
-
-            // Adding in a threshold might be worth it, but it's a bit difficult to work with
 
         }
     """

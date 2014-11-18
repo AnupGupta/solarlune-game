@@ -506,3 +506,5 @@ class InputDevice():
         bind = binding name
         """
         return 1.0 if self.bindings[bind]['state'] == STATE_RELEASED else 0.0
+
+device = InputDevice()
