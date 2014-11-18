@@ -8,6 +8,7 @@ from bge import logic
 
 
 class CAudioDevice():
+
     def __init__(self, sound_folder='//assets/snd/'):
 
         self.device = aud.device()
@@ -29,14 +30,20 @@ class CAudioDevice():
         self.current_bgm_handle = None
         self.current_bgm = None
 
-    def play_bgm(self, bgm, loop=1, volume_base=1.0):
+        self.sound_volume = 1.0
+        self.bgm_volume = 1.0
 
-        if bgm != self.current_bgm:
-            self.current_bgm = bgm
-            self.current_bgm_handle = self.device.play(self.sounds[bgm])
-            self.current_bgm_handle.loop_count = -1
-            self.current_bgm_handle.volume = volume_base
-            return self.current_bgm_handle
+    def play_bgm(self, bgm, loop=-1):
+
+        if self.bgm_volume > 0.0:
+
+            if bgm != self.current_bgm:
+
+                self.current_bgm = bgm
+                self.current_bgm_handle = self.device.play(self.sounds[bgm])
+                self.current_bgm_handle.loop_count = loop
+                self.current_bgm_handle.volume = self.bgm_volume
+                return self.current_bgm_handle
 
         return None
 
@@ -46,12 +53,15 @@ class CAudioDevice():
             self.current_bgm = None
             self.current_bgm_handle.stop()
 
-    def play_sound(self, sound, volume_base=1.0, volume_var=0.0, pitch_var=.1):
-        handle = self.device.play(self.sounds[sound])
-        handle.volume = volume_base
-        handle.volume += random.uniform(0.0, volume_var)
-        handle.pitch += random.uniform(-pitch_var, pitch_var)
-        return handle
+    def play_sound(self, sound, volume_var=0.0, pitch_var=.1):
+
+        if self.sound_volume > 0.0:
+
+            handle = self.device.play(self.sounds[sound])
+            handle.volume = self.sound_volume
+            handle.volume += random.uniform(0.0, volume_var)
+            handle.pitch += random.uniform(-pitch_var, pitch_var)
+            return handle
 
     def get_bgm_handle(self):
 
