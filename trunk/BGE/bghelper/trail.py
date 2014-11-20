@@ -25,162 +25,187 @@ this script, SolarLune, should you use this script.
 
 """
 
+from bge import logic, types
 
-def init(cont):
-    obj = cont.owner
 
-    sce = obj.scene
+class Trail():
 
-    mesh = obj.meshes[0]
+    def __init__(self, stretch=True, spacing=3, reverse=False, vertex_axis="y",
+                 update_on_moving_only=False, trail_target_obj=None, trail_obj=None):
+        """
+        Creates a Trail object. Trail objects influence the vertices of their mesh to react to a trail owner object's
+        movements. Think of a light trail, or a cape. When the owner moves or jumps or whatever, the trail reacts
+        accordingly.
 
-    if not 'init' in obj:
+        :param stretch: Bool - If the vertices of the trail should stretch and stay in their position until movement.
+        Think of the difference between a trail from a light cycle from Tron, and a cape. The trail stretches (it starts
+        with a "nub", and then gets longer as the cycle drives along). The cape, on the other hand, doesn't
+        stretch (it's always the same length).
+        :param spacing: Int - The number of frames between the movement and the vertex update (or the vertex update and
+        the following vertex update). Higher spacing = more delayed reaction on the trail vertices, which means a more
+        "rough" trail, and a longer trail when stretch is on. Lower spacing = less of a pronounced reaction on the
+        trail vertices, and a smoother overall trail. Also, a shorter trail when stretch is on.
+        :param reverse: Bool - If the trail should reverse it's orientation based on the movement of the trail owner.
+        E.G. If reverse is on, and a sword swings left, its trail swings left too.
+        :param vertex_axis: Str - The axis that the vertices of the trail move on, going away from the origin of the
+        trail object's mesh. Should be "x", "y", or "z".
+        :param update_on_moving_only: Bool - If the trail should update only when the object's moving.
+        :param trail_target_obj: KX_GameObject reference - The object that influences the trail. The trail object will
+        snap to the trail target object's position and orientation. If left to None, this will default to the trail
+        object's parent. Although, to get the best results, the trail shouldn't be parented to its owner. See the
+        example blend file.
+        :param trail_obj: The object to manipulate to achieve a trail. If left to None, will default to the "calling"
+        object.
+        :return: Trail
+        """
 
-        if not 'trail_axis' in obj:
-            obj['trail_axis'] = 'y'
+        if not trail_obj:
+            o = logic.getCurrentController().owner
+        else:
+            o = trail_obj
 
-        obj['init'] = 1
+        assert isinstance(o, types.KX_GameObject)
 
-        obj['verts'] = []
+        self.obj = o
+
+        sce = self.obj.scene
+
+        #if trail_mesh is None:
+
+        mesh = self.obj.meshes[0]
+
+        #else:
+
+        #    mesh = trail_mesh
+
+        self.trail_axis = vertex_axis
+
+        self.trail_verts = []
 
         for mat in range(mesh.numMaterials):
 
             for v in range(mesh.getVertexArrayLength(mat)):
                 vert = mesh.getVertex(mat, v)
 
-                obj['verts'].append(vert)  # Get all verts
+                self.trail_verts.append(vert)  # Get all verts
 
-        obj['vert_offsets'] = {}
+        self.vert_offsets = {}
 
-        for vert in obj['verts']:
-            obj['vert_offsets'][vert] = vert.XYZ
+        for vert in self.trail_verts:
+            self.vert_offsets[vert] = vert.XYZ
 
         vert_pairs = {}
 
-        for vert in obj['verts']:
+        for vert in self.trail_verts:
 
-            if obj['trail_axis'].lower() == 'x':
+            if self.trail_axis.lower() == 'x':
                 vert_y = round(vert.x,2)  # Round it off to ensure that verts that have very close X positions
                 # (i.e. 0 and 0.01) get grouped together
-            elif obj['trail_axis'].lower() == 'y':
+            elif self.trail_axis.lower() == 'y':
                 vert_y = round(vert.y, 2)
             else:
                 vert_y = round(vert.z, 2)
 
-            if not vert_y in vert_pairs:
+            if vert_y not in vert_pairs:
                 vert_pairs[vert_y] = []
 
             vert_pairs[vert_y].append(vert)  # Get the verts paired with their positions
 
-        obj['vert_pairs'] = []
+        self.vert_pairs = []
 
         for vp in vert_pairs:
-            obj['vert_pairs'].append([vp, vert_pairs[vp]])
+            self.vert_pairs.append([vp, vert_pairs[vp]])
 
-        obj['vert_pairs'] = sorted(obj['vert_pairs'], key=lambda x: x[0], reverse=True)
+        self.vert_pairs = sorted(self.vert_pairs, key=lambda x: x[0], reverse=True)
 
-        obj['target_positions'] = []
+        self.target_positions = []
 
-        # if not 'trail_length' in obj:
-        #	obj['trail_length'] = 1.0	# Trail length in seconds
+        self.trail_stretch = stretch  # Stretch the trail to 'fit' the movements
 
+        self.trail_spacing = spacing  # Number of frames between each edge in the trail
 
+        self.trail_reverse = reverse  # If the bending of the trail should be reversed
 
-        if not 'trail_stretch' in obj:
-            obj['trail_stretch'] = 1  # Stretch the trail to 'fit' the movements
+        self.update_on_moving_only = update_on_moving_only  # Update the trail only when moving
 
-        if not 'trail_spacing' in obj:
-            obj['trail_spacing'] = 3  # Number of frames between each edge in the trail
+        self.trail_counter = spacing  # Number of frames between each 'keyframe'
 
-        if not 'trail_reverse' in obj:
-            obj['trail_reverse'] = 0
+        if not trail_target_obj:
 
-        if not 'trail_onmoving' in obj:
-            obj['trail_onmoving'] = 0  # Update the trail only when moving
-
-        obj['trail_counter'] = obj['trail_spacing']  # Number of frames between each 'keyframe'
-
-        if not 'target' in obj:  # Target of the trail
-
-            obj['target'] = obj.parent
+            self.target = self.obj.parent
 
         else:
 
-            if isinstance(obj['target'], str):
-                obj['target'] = sce.objects[obj['target']]
+            self.target = trail_target_obj
 
-        obj['target_past_pos'] = obj['target'].worldPosition.copy()
-        obj['target_past_ori'] = obj['target'].worldOrientation.copy()
+        self.target_past_pos = self.target.worldPosition.copy()
+        self.target_past_ori = self.target.worldOrientation.copy()
 
-        target_info = [obj['target'].worldPosition.copy(), obj['target'].worldOrientation.copy()]
+        for x in range(len(self.vert_pairs) * self.trail_spacing):
+            self.target_positions.insert(0, [self.target.worldPosition.copy(), self.target.worldOrientation.copy()])
 
-        for x in range(len(obj['vert_pairs']) * obj['trail_spacing']):
-            obj['target_positions'].insert(0, target_info)
+    def update(self):
 
-    else:
+        """
+        Update the trail.
+        :return:
+        """
 
-        return 1
+        if not self.obj.parent == self.target:
+            self.obj.worldPosition = self.target.worldPosition
+            self.obj.worldOrientation = self.target.worldOrientation
 
-
-def main(cont):
-    obj = cont.owner
-
-    if init(cont):
-
-        if not obj.parent == obj['target']:
-            obj.worldPosition = obj['target'].worldPosition
-            obj.worldOrientation = obj['target'].worldOrientation
-
-        target_info = [obj['target'].worldPosition.copy(), obj['target'].worldOrientation.copy()]
+        target_info = [self.target.worldPosition.copy(), self.target.worldOrientation.copy()]
 
         insert = 0
 
-        if not obj['trail_onmoving']:
+        if not self.update_on_moving_only:
             insert = 1
         else:
 
-            pos_diff = (obj['target'].worldPosition - obj['target_past_pos']).magnitude
-            ori_diff = (obj['target'].worldOrientation - obj['target_past_ori']).median_scale
+            pos_diff = (self.target.worldPosition - self.target_past_pos).magnitude
+            ori_diff = (self.target.worldOrientation - self.target_past_ori).median_scale
             threshold = 0.0001
 
             if pos_diff > threshold or ori_diff > threshold:
                 insert = 1
 
         if insert:
-            obj['target_positions'].insert(0, target_info)
+            self.target_positions.insert(0, target_info)
 
-        if len(obj['target_positions']) > len(obj['vert_pairs']) * obj['trail_spacing']:
-            obj['target_positions'].pop()  # Remove oldest position value
+        if len(self.target_positions) > len(self.vert_pairs) * self.trail_spacing:
+            self.target_positions.pop()  # Remove oldest position value
 
-        for vp in range(0, len(obj['vert_pairs'])):
+        for vp in range(0, len(self.vert_pairs)):
 
-            verts = obj['vert_pairs'][vp][1]
+            verts = self.vert_pairs[vp][1]
 
-            if len(obj['target_positions']) > vp * obj['trail_spacing']:
+            if len(self.target_positions) > vp * self.trail_spacing:
 
-                pos = obj['target_positions'][vp * obj['trail_spacing']][0]
-                ori = obj['target_positions'][vp * obj['trail_spacing']][1]
+                pos = self.target_positions[vp * self.trail_spacing][0]
+                ori = self.target_positions[vp * self.trail_spacing][1]
 
                 for vert in verts:
 
-                    if obj['trail_reverse']:
-                        if obj['trail_stretch']:  # Factor in position of the target to 'stretch' (useful for trails,
-                            # where the end point stays still, hopefully, until the rest 'catches up'')
-                            diff = (pos - obj['target'].worldPosition) * ori  # .inverted()
-                            vert.XYZ = (obj['vert_offsets'][vert] + diff) * obj['target'].worldOrientation.inverted()
-                        else:  # Don't factor in movement of the trail
-                            # (useful for things that wouldn't stretch, like scarves)
-                            vert.XYZ = obj['vert_offsets'][vert] * obj['target'].worldOrientation.inverted()
-                        vert.XYZ = vert.XYZ * ori
-                    else:
+                    if not self.trail_reverse:
 
-                        if obj['trail_stretch']:  # Factor in position of the target to 'stretch' (useful for trails,
+                        if self.trail_stretch:  # Factor in position of the target to 'stretch' (useful for trails,
                         # where the end point stays still, hopefully, until the rest 'catches up'')
-                            diff = (pos - obj['target'].worldPosition) * ori
-                            vert.XYZ = (obj['vert_offsets'][vert] + diff) * obj['target'].worldOrientation
+                            diff = (pos - self.target.worldPosition) * ori
+                            vert.XYZ = (self.vert_offsets[vert] + diff) * self.target.worldOrientation
                         else:  # Don't factor in movement of the trail
                         # (useful for things that wouldn't stretch, like scarves)
-                            vert.XYZ = obj['vert_offsets'][vert] * obj['target'].worldOrientation
+                            vert.XYZ = self.vert_offsets[vert] * self.target.worldOrientation
                         vert.XYZ = vert.XYZ * ori.inverted()
 
-        obj['target_past_pos'] = obj['target'].worldPosition.copy()
-        obj['target_past_ori'] = obj['target'].worldOrientation.copy()
+                    else:  # Reverse the trail's direction
+
+                        if self.trail_stretch:
+                            diff = (pos - self.target.worldPosition) * ori  # .inverted()
+                            vert.XYZ = (self.vert_offsets[vert] + diff) * self.target.worldOrientation.inverted()
+                        else:
+                            vert.XYZ = self.vert_offsets[vert] * self.target.worldOrientation.inverted()
+                        vert.XYZ = vert.XYZ * ori
+
+        self.target_past_pos = self.target.worldPosition.copy()
+        self.target_past_ori = self.target.worldOrientation.copy()
