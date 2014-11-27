@@ -44,8 +44,6 @@ def mouse_look(obj=None, accel_speed=1.0, max_speed=45.0, friction=8.0, lock=ML_
         if abs(delta_y) < margin:
             delta_y = 0.0
 
-        print(delta_y)
-
         divisor = .0025
 
         info = obj['mouse_look_info']
