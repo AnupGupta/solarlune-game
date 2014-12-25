@@ -4,6 +4,8 @@ from bge import logic, render
 
 import math,time
 
+# Nodemaps for game space navigation.
+
 
 class Node():
 

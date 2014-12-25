@@ -6,10 +6,8 @@ import mathutils
 
 from . import window
 
-# Game functions
 
-
-ML_LOCK_NONE = 0
+ML_LOCK_NONE = 0  # Constants for mouse-look axis locking
 ML_LOCK_X = 1
 ML_LOCK_Y = 2
 

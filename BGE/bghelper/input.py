@@ -1,45 +1,8 @@
+__author__ = 'SolarLune'
+
 import math
 
 from bge import logic
-
-"""
-Copyright (c) 2013-2014 SolarLune
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
-(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
-FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-P.S. It would be nice if you could attribute me for the creation of this and my other scripts. Thanks!
-"""
-
-"""
-Change-log:
-
-11/18/13: Changed order of arguments for InputDevice constructor.
-
-11/9/13: Updated to be able to properly handle joystick hat input correctly (the four directions
-on the hats are bit values; you're not meant to use the diagonals directly).
-
-11/8/13: Slight code cleanup.
-
-10/2/13: Updated input methods to drop the need to use states for each individual binding
-(i.e. JumpPressed and JumpDown). Now you just specify the type of binding it is when you add it (KEY for keyboard,
-JOYBUTTON for joystick button, etc.), and then use the input device itself to check the state. There are three
-functions for this process now - bind_down, bind_pressed, and bind_released. Each function will return the state of the
-binding should the state you specify be true (i.e. if the input is being held, then it will return the value of that
-input. For a key or a button, it would be 1.0 or 0. For an axis, it would be a number indicating how far that axis
-is being pressed).
-
-Check the BGinput example to see how it works.
-"""
 
 # input constants
 
@@ -289,7 +252,7 @@ class InputKey():
 
                 self.active = 0.0
 
-        elif joy is not None:
+        elif joy is not None and joy.numAxis and joy.numButtons and joy.numHats:
 
             if self.inputtype == JOYBUTTON:
 

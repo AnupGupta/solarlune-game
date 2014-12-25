@@ -1,45 +1,20 @@
-# ######### 2D SCREEN FILTER LIBRARY (Shaders.Filters) ##########
-#
-# Author: SolarLune and many others
-# Date Updated: 6/4/14
-#
+__author__ = 'SolarLune'
+
 # This is a library of 2D filters that either
 # 1) I made, or
 # 2) I Adapted from other scripts (I don't think any were direct copies, just re-adaptation. If I am wrong, though,
 # please point it out to me).
 #
 # Hopefully someone can use them.
-#
 
-# ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-###
-### This script and the functions below
-### are under the MIT license agreement, thouhg it would be
-### greatly appreciated if you could do one thing if you use it.
-###
-###
-###
-### It would be appreciated if you would attribute usage of this module
-### or any scripts within, mainly the names of any contributors or authors
-### for the functions you use.
-###
-###
-### By using this script, you agree to this license agreement.
-###
-### You may NOT edit this license agreement.
-###
-### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-### As a note to myself, the 2D filter system in the BGE has access to the following samplers:
-
-### bgl_RenderedTexture (The usual screen grab)
-### bgl_LuminanceTexture (The luminosity)
-### bgl_DepthTexture (The depth of each pixel (fragment))
+# As a note to myself, the 2D filter system in the BGE has access to the following samplers:
+# bgl_RenderedTexture (The usual screen grab)
+# bgl_LuminanceTexture (The luminosity)
+# bgl_DepthTexture (The depth of each pixel (fragment))
 
 from bge import logic
 
-### Filters
+# Filters
 
 
 def read_depths():

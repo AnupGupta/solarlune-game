@@ -1,3 +1,5 @@
+__author__ = 'SolarLune'
+
 import sys
 
 from bge import logic
