@@ -1,3 +1,5 @@
+__author__ = 'SolarLune'
+
 from bge import logic
 
 LT_POINT = 0

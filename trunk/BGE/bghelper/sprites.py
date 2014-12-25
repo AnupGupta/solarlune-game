@@ -1,21 +1,3 @@
-"""
-Copyright (c) 2014 SolarLune
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files
-(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
-FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-P.S. It would be nice if you could attribute me for the creation of this and my other scripts. Thanks!
-"""
-
 __author__ = 'SolarLune'
 
 import math
@@ -24,6 +6,7 @@ from bge import logic
 
 
 class _spritemap_base():
+
     def __init__(self, obj):
 
         """
@@ -288,6 +271,10 @@ class _spritemap_base():
 
         return len(self.anim_dict[anim_name]['animation']) - 1
 
+    def copy_animations(self, other_spritemap):
+
+        self.anim_dict = other_spritemap.anim_dict.copy()
+
     # CALLBACKS
 
     def on_subimage_change(self, sprite_map, current_subimage, prev_subimage):
@@ -333,6 +320,7 @@ class _spritemap_base():
 
 
 class SpriteMapUV(_spritemap_base):
+
     def __init__(self, obj):
 
         """
@@ -371,6 +359,9 @@ class SpriteMapUV(_spritemap_base):
 
         self.offset = {}
 
+        self.flip_x = False
+        self.flip_y = False
+
         for vert in self.vertices:
             self.offset[vert] = vert.getUV() - uvs[0][0].getUV()  # The offset from the bottom-left vertex
 
@@ -385,9 +376,23 @@ class SpriteMapUV(_spritemap_base):
 
         subi = math.floor(self.subimage)
 
-        for vert in self.vertices:
-            vert.setUV([self.offset[vert].x + (self.uv_size[0] * anim[0]),
-                        self.offset[vert].y + (self.uv_size[1] * anim[subi])])
+        for v in range(len(self.vertices)):
+
+            vert = self.vertices[v]
+            opposite = self.vertices[v - (len(self.vertices) // 2)]  # Note this won't work with oddly-numbered, uneven
+            # meshes; heck, it might not work with subdivided simple planes. Best I can do under the circumstances.
+
+            if self.flip_x:
+                xcomp = self.offset[opposite].x + (self.uv_size[0] * anim[0])
+            else:
+                xcomp = self.offset[vert].x + (self.uv_size[0] * anim[0])
+
+            if self.flip_y:
+                ycomp = self.offset[opposite].y + (self.uv_size[1] * anim[subi])
+            else:
+                ycomp = self.offset[vert].y + (self.uv_size[1] * anim[subi])
+
+            vert.setUV([xcomp, ycomp])
 
         return True
 

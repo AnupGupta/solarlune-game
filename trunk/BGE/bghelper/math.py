@@ -1,3 +1,5 @@
+__author__ = 'SolarLune'
+
 import mathutils
 
 from bge import logic, render

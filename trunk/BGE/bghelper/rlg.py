@@ -1,30 +1,6 @@
-# ##########################
-# Random Level Generation #
-# V1.2					  #
-###########################
+__author__ = 'SolarLune'
 
-# Author : SolarLune
-# Date Updated: 3/16/14
-
-# This resource and the functions below are released under something similar to Creative Commons licensing;
-# You may use it for any work, commercial or otherwise, as long as you credit the original author (SolarLune).
-# 
-# By using this script or any part thereof, you agree to this license agreement.
-#
-# You may NOT edit this license agreement.
-#
-#
-# Change-log:
-#
-# 3/16/14 - Added new GenLine() function to return a room with a wavy floor.
-
-# Altered GenNodes() function to create rooms where each node is dropped. Use the room_style and min and max_room_size variables
-# to alter how the rooms generate.
-
-# Added Invert() function to allow you to easily switch between room types (i.e. turn all 0's to 1's, and all 3's to 4's, and vice-versa).
-
-# Added CleanUp() function to clean returned rooms for any spare and single values surrounded by different values
-
+# Random level generation module.
 # TODO: Add rectangular rooms to the GenNodes room styles.
 
 import random
@@ -37,11 +13,13 @@ import mathutils
 from .mesh import get_dimensions
 from .math import clamp
 
-### CONSTANTS ###
+# CONSTANTS
 
-GN_CONNECTION_STYLE_ONE = 0  # Connection styles for the GenNodes function; ONE = all nodes connect to another one (other than themselves) randomly
-GN_CONNECTION_STYLE_ALL = 1  # ALL = Each node makes a connect to every other node
-GN_CONNECTION_STYLE_HUB = 2  # HUB = Each node connects to a pre-determined node (like a spiderweb)
+# Connection styles for the GenNodes function;
+
+GN_CONNECTION_STYLE_ONE = 0  # ONE = all nodes connect to another one (other than themselves) randomly
+GN_CONNECTION_STYLE_ALL = 1  # ALL = Each node makes a connection to every other node
+GN_CONNECTION_STYLE_HUB = 2  # HUB = Each node connects to a pre-determined node (like a spiderweb or a "splash")
 
 GN_ROOM_STYLE_ROUND = 0  # Explodes a round room for the node
 GN_ROOM_STYLE_SQUARE = 1  # Explodes a rectangular room for the node
@@ -58,7 +36,7 @@ GSC_EDGE_VOID = 1
 GSC_EDGE_EXTEND = 2
 GSC_EDGE_WRAP = 3
 
-#### Helper Functions ####
+# Helper Functions
 
 
 def get_surrounding_cells(room, cell_y, cell_x, ignore=0, edge=0):
@@ -702,7 +680,7 @@ def clean_up(room_list):
     return l
 
 
-def populate(room_list, room_4way, room_straight, room_end, room_corner, room_middle, room_ceiling={0: None}, point=None,
+def populate(room_list, room_4way, room_straight, room_end, room_corner, room_t, room_ceiling={0: None}, spawn_point=None,
              varying_size=0):
     """
     Populates the in-game world with floor pieces according to the room that you feed into the function.
@@ -718,14 +696,14 @@ def populate(room_list, room_4way, room_straight, room_end, room_corner, room_mi
     The number represents the cell type (i.e. a 1 on the grid will spawn one of the rooms in the 1 list)
 
     room_4way = a room with four exits (a cross shape)
-    room_straight = a room with two exits across from each other
-    room_end = a room with one exit (a dead end)
-    room_corner = a room with two exits (an L-shaped room)
-    room_middle = a room with three exits (a T-shaped room)
+    room_straight = a room with two exits across from each other; turned horizontally
+    room_end = a room with one exit (a dead end); opens to the west.
+    room_corner = a room with two exits (an L-shaped room); opens to the west and turns north (left).
+    room_t = a room with three exits (a T-shaped room); facing "upside-down", so that the flat part faces south.
 
     room_ceiling = the same as above, but optional. This would be the objects to place on every null value (i.e. 0)
 
-    point = the starting world position of the random room (the center of the map, usually)
+    spawn_point = the center of the map, usually; if left to None, it will be the calling object's world position.
 
     varying_size = if the size of the rooms is individual (i.e. each room can be different sizes), or if they're all the
     same
@@ -830,7 +808,7 @@ def populate(room_list, room_4way, room_straight, room_end, room_corner, room_mi
 
                 elif sur['num'] == 3:  # Middle
 
-                    roomchoice = random.choice(room_middle[cell])
+                    roomchoice = random.choice(room_t[cell])
                     r = sce.addObject(roomchoice, obj)
                     ori = r.orientation.to_euler()
 
@@ -878,12 +856,12 @@ def populate(room_list, room_4way, room_straight, room_end, room_corner, room_mi
                 halfmapw = math.floor(len(room_list[0]) / 2.0) * roomsize[0]
                 halfmaph = math.floor(len(room_list) / 2.0) * roomsize[1]
 
-                if point is None:
-                    point = list(obj.worldPosition)
+                if spawn_point is None:
+                    spawn_point = list(obj.worldPosition)
                 else:
-                    point = list(point)
+                    spawn_point = list(spawn_point)
 
-                pos = [(rx * roomsize[0]) - (halfmapw) + point[0], (cy * roomsize[1]) - (halfmaph) + point[1], point[2]]
+                pos = [(rx * roomsize[0]) - (halfmapw) + spawn_point[0], (cy * roomsize[1]) - (halfmaph) + spawn_point[1], spawn_point[2]]
 
                 r.worldPosition = pos
 
@@ -904,13 +882,13 @@ def populate(room_list, room_4way, room_straight, room_end, room_corner, room_mi
                     halfmapw = math.floor(len(room_list[0]) / 2.0) * roomsize[0]
                     halfmaph = math.floor(len(room_list) / 2.0) * roomsize[1]
 
-                    if point is None:
-                        point = list(obj.worldPosition)
+                    if spawn_point is None:
+                        spawn_point = list(obj.worldPosition)
                     else:
-                        point = list(point)
+                        spawn_point = list(spawn_point)
 
-                    pos = [(rx * roomsize[0]) - (halfmapw) + point[0], (cy * roomsize[1]) - (halfmaph) + point[1],
-                           point[2]]
+                    pos = [(rx * roomsize[0]) - (halfmapw) + spawn_point[0], (cy * roomsize[1]) - (halfmaph) + spawn_point[1],
+                           spawn_point[2]]
                     r.worldPosition = pos
 
     return ({'spawned': spawned, 'room_map': rl})
