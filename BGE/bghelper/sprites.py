@@ -275,6 +275,10 @@ class _spritemap_base():
 
         self.anim_dict = other_spritemap.anim_dict.copy()
 
+    def on_last_frame(self):
+
+        return self.subimage >= self.get_animation_length(self.current_animation)
+
     # CALLBACKS
 
     def on_subimage_change(self, sprite_map, current_subimage, prev_subimage):

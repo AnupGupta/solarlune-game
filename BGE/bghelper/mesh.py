@@ -349,7 +349,7 @@ def get_dimensions(object=None, roundit=3, offset=1, meshnum=0, factor_in_scale=
         return (mathutils.Vector(size), None)
 
 
-def uv_scroll(uspd=0.0025, vspd=0.0, layer=0, mesh=None, mat=0, freqstretch=1):
+def uv_scroll(uspd=0.0025, vspd=0.0, layer=0, mesh=None, mat=0, frequency=0):
     """
     Scrolls the UV Coordinate of each vertex in the specified mesh by
     uspd and vspd.
@@ -358,8 +358,9 @@ def uv_scroll(uspd=0.0025, vspd=0.0, layer=0, mesh=None, mat=0, freqstretch=1):
     layer = which UV-layer to scroll; 0 = first layer, 1 = second, 2 = both
     mesh = which mesh to use for UV-animation
     mat = which material to look for (I think it's organized by material)
-    freqstretch = frequency-stretching enabled - if set to 1, then you can run this script with an Always sensor set to a
-    limited frequency rate and still scroll the UV-map by the same speed, so you should only connect this script's controller to a single Always sensor
+
+    frequency = frequency the script is run. Higher numbers means a choppier effect, so the function will compensate for
+    that (so basically, you can plug the frequency of the sensor running this script into this arg.) Defaults to 0.
     """
 
     from bge import logic
@@ -367,13 +368,10 @@ def uv_scroll(uspd=0.0025, vspd=0.0, layer=0, mesh=None, mat=0, freqstretch=1):
     cont = logic.getCurrentController()
     obj = cont.owner
 
-    if mesh == None:
+    if mesh is None:
         mesh = obj.meshes[mat]
 
-    if freqstretch:
-        f = cont.sensors[0].frequency + 1
-    else:
-        f = 1
+    f = frequency + 1
 
     for v in range(mesh.getVertexArrayLength(mat)):
 

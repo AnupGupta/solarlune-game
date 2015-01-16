@@ -57,6 +57,24 @@ def sign(value):
         return 0
 
 
+def sort_closest_gameobjects(first, others):
+
+    l = others[:]
+
+    l.sort(key=lambda x: first.getDistanceTo(x))
+
+    return l
+
+
+def sort_closest_vectors(first, others):
+
+    l = others[:]
+
+    l.sort(key=lambda x: (first - x).magnitude)
+
+    return l
+
+
 def raycast_line(anglevect, anglewidth, topos, frompos=None, raynum=3,
                 center=1, from_scalar=1.0, to_scalar=1.0, dist=0, prop='', face=1, xray=1,
                 poly=0, obj=None, debug=False, objdebug=None):
