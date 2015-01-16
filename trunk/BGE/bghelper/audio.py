@@ -9,35 +9,43 @@ from bge import logic
 
 class AudioDevice():
 
-    BGM_STATUS_FADING_IN = 0
-    BGM_STATUS_PLAYING = 1
-    BGM_STATUS_FADING_OUT = 2
+    BGM_STATUS_STOPPED = 0
+    BGM_STATUS_FADING_IN = 1
+    BGM_STATUS_PLAYING = 2
+    BGM_STATUS_FADING_OUT = 3
 
     def __init__(self, sound_folder='//assets/snd/'):
 
         self.device = aud.device()
 
-        if not sound_folder.endswith("/"):
-            sound_folder += "/"  # Make sure there's a trailing slash for sound files to go
-
-        self.sound_folder = logic.expandPath(sound_folder)
-
         self.sounds = {}
 
-        for snd_info in os.walk(self.sound_folder):
+        self.set_audio_folder(sound_folder)
 
-            for f in snd_info[2]:
-                filename = os.path.splitext(f)[0]
-
-                self.sounds[filename] = aud.Factory(self.sound_folder + f)
-
-        #self.bgm_handle_list = []
         self.bgm_list = []
 
         self.sound_volume = 1.0
         self.bgm_volume = 1.0
 
-        self.fade_time = 1.0
+        self.fade_time = 1.0  # Fade time between BGM plays
+
+    def set_audio_folder(self, sound_folder):
+
+        if not sound_folder.endswith("/"):
+            sound_folder += "/"  # Make sure there's a trailing slash for sound files to go
+
+        sound_folder = logic.expandPath(sound_folder)
+
+        self.sounds = {}
+
+        for snd_info in os.walk(sound_folder):
+
+            for f in snd_info[2]:
+
+                filename = os.path.splitext(f)[0]  # Ignore the extension; we're just
+                # interested in the audio file itself
+
+                self.sounds[filename] = aud.Factory(sound_folder + f)
 
     def update_bgm(self):
 
@@ -48,6 +56,11 @@ class AudioDevice():
         for b in range(len(list)):
 
             bgm = list[b]
+
+            if bgm['status'] == self.BGM_STATUS_STOPPED:
+
+                bgm['handle'].stop()
+                self.bgm_list.remove(bgm)
 
             if bgm['status'] == self.BGM_STATUS_FADING_IN:
 
@@ -114,9 +127,15 @@ class AudioDevice():
 
     def stop_bgm(self):
 
-        if self.current_bgm_handle is not None:
-            self.current_bgm_handle = None
-            self.current_bgm_handle.stop()
+        if self.bgm_list:
+
+            self.bgm_list[0]['status'] = self.BGM_STATUS_STOPPED
+
+    def stop_all_bgm(self):
+
+        for b in self.bgm_list:
+
+            b['status'] = self.BGM_STATUS_STOPPED
 
     def play_sound(self, sound, volume_var=0.0, pitch_var=.1):
 

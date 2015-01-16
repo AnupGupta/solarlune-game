@@ -1,6 +1,6 @@
-from bge import logic
-
 __author__ = 'SolarLune'
+
+from bge import logic
 
 # Time-based mechanics.
 
@@ -43,22 +43,44 @@ class Timer():
         self.time = 0.0
         self.wait_time = 0.0
         self.set_time = 0.0
+        self.on = True
 
     def set(self, time):
         self.set_time = self.time
         self.wait_time = time
+        self.on = True
+
+    def add(self, time):
+
+        #self.set_time += time
+        self.wait_time += time
 
     def get_time_left(self):
 
-        return self.wait_time - (self.time - self.set_time)
+        if self.on:
+            return self.wait_time - (self.time - self.set_time)
+        else:
+            return 0
 
     def time_up(self):
 
-        return self.get_time_left() <= 0
+        if self.on:
+            return self.get_time_left() <= 0
+        else:
+            return False
 
-    def update(self):
+    def pause(self):
 
-        self.time += 1.0 / logic.getLogicTicRate()
+        self.on = False
+
+    def resume(self):
+
+        self.on = True
+
+    def update(self, frequency=0):
+
+        if self.on:
+            self.time += (1.0 / logic.getLogicTicRate()) * (frequency + 1)
 
 
 timer_bank = TimerBank()
