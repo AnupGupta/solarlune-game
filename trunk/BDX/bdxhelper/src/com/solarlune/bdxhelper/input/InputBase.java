@@ -1,9 +1,7 @@
 package com.solarlune.bdxhelper.input;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.PovDirection;
-import com.nilunder.bdx.Bdx;
 
 import static com.badlogic.gdx.controllers.Controllers.getControllers;
 
@@ -18,14 +16,16 @@ public class InputBase {
     static public final int IS_DOWN = 2;
     static public final int IS_RELEASED = 3;
 
-    public int input_state = IS_UP;
+    public int inputState = IS_UP;
 
     public float active = 0;
-    public float past_active = 0;
+    public float pastActive = -1; // Begin with -1, to indicate that we don't have a buffer (a previous state for the input)
     public float scalar = 1;
 
+    public int controllerIndex;
     public Controller controller;  // Used for joystick input types; doesn't
-    public PovDirection povDirection;  // make sense to duplicate this across multiple classes
+    public int povDirection;  // make sense to duplicate this across multiple classes
+	// povDirection is now a normal integer because it's easier to deal with across multiple areas.
 
 //    public InputBase(int input_type, int keyname){
 //
@@ -43,27 +43,32 @@ public class InputBase {
 //    }
 
     public void setGamepadIndex(int index){
+        controllerIndex = index;
         this.controller = getControllers().get(index); // For joysticks
     }
 
     public void poll(){
 
+		if (pastActive == -1)  // When first created, if an Input had a pastActive of 0, then the input being down would
+			pastActive = active;  // indicate a press and down, which is bad, since that could just be a person holding down
+		// a key, not an actual key press or release
+
         if (active != 0){ // Is active
 
-            if (past_active == active)
-                input_state = IS_DOWN;
+            if (pastActive != 0)
+                inputState = IS_DOWN;
             else
-                input_state = IS_PRESSED;
+                inputState = IS_PRESSED;
         }
         else{
 
-            if (past_active == active)
-                input_state = IS_UP;
+            if (pastActive == 0)
+                inputState = IS_UP;
             else
-                input_state = IS_RELEASED;
+                inputState = IS_RELEASED;
         }
 
-        past_active = active;
+        pastActive = active;
 
     }
 

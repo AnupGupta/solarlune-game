@@ -7,9 +7,9 @@ import com.badlogic.gdx.controllers.PovDirection;
  */
 public class InputGamepadHat extends InputBase {
 
-    int hatNumber;
+    public int hatNumber;
 
-    public InputGamepadHat(PovDirection povDirection, int hatNumber, int gamepadIndex, float scalar){
+    public InputGamepadHat(int povDirection, int hatNumber, int gamepadIndex, float scalar){
 
         this.hatNumber = hatNumber;
         this.povDirection = povDirection;
@@ -17,7 +17,7 @@ public class InputGamepadHat extends InputBase {
         this.setGamepadIndex(gamepadIndex);
     }
 
-    public InputGamepadHat(PovDirection povDirection){
+    public InputGamepadHat(int povDirection){
 
         this(povDirection, 0, 0, 1);
     }
@@ -26,7 +26,7 @@ public class InputGamepadHat extends InputBase {
 
         active = 0;
 
-        if (controller.getPov(hatNumber) == povDirection)
+        if (controller.getPov(hatNumber).ordinal() == povDirection)
             active = scalar;
 
         super.poll();

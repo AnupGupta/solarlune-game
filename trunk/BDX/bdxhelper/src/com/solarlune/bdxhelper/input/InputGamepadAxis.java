@@ -5,8 +5,8 @@ package com.solarlune.bdxhelper.input;
  */
 public class InputGamepadAxis extends InputBase {
 
-    int axisIndex;
-    int axisDirection;
+    public int axisIndex;
+    public int axisDirection;
     float deadzone;
 
     public InputGamepadAxis(int axisIndex, int axisDirection, int gamepadIndex, float deadzone, float scalar){
@@ -34,7 +34,7 @@ public class InputGamepadAxis extends InputBase {
         if ((Math.signum(axis) == axisDirection) && (Math.abs(axis) >= deadzone))
             active = Math.abs(axis * scalar);
 
-        super.poll();
+		super.poll();
 
     }
 
