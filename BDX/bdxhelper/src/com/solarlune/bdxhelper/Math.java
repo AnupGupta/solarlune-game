@@ -5,7 +5,7 @@ import javax.vecmath.Vector3f;
 /**
  * Created by SolarLune on 1/9/2015.
  */
-public class Math {
+public final class Math {
 
     public static Vector3f snapVectToGrid(Vector3f vect, float snapTo){
 

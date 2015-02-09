@@ -7,10 +7,9 @@ import com.nilunder.bdx.Bdx;
  */
 public class InputKey extends InputBase {
 
-    String keyName;
+    public String keyName;
 
     public InputKey(String keyName){
-
         this.keyName = keyName;
     }
 
@@ -21,12 +20,7 @@ public class InputKey extends InputBase {
         if (Bdx.keyboard.keyDown(keyName))
             active = scalar;
 
-        //if (Gdx.input.isKeyPressed(keyname))
-        //    active = scalar;
-        //else
-        //    active = 0;
-
-        super.poll();
+		super.poll();
 
     }
 

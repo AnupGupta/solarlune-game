@@ -8,7 +8,7 @@ import java.util.Map;
  * Created by SolarLune on 1/7/2015.
  */
 
-public class InputMap {
+public final class InputMap {
 
     static public HashMap<String, ArrayList<InputBase>> bindings = new HashMap<String, ArrayList<InputBase>>();
     static public HashMap<String, ArrayList<Float>> results = new HashMap<String, ArrayList<Float>>();
@@ -25,6 +25,16 @@ public class InputMap {
 
         binding.add(inputBase);
 
+    }
+
+    static public void removeBinding(String bindingName){
+
+        if (bindings.containsKey(bindingName))
+            bindings.remove(bindingName);
+    }
+
+    static public void clear(){
+        bindings.clear();
     }
 
     static public float bindDown(String bindName){
@@ -52,7 +62,7 @@ public class InputMap {
 
             ArrayList<Float> res = results.get(bindName);
 
-            if (res.get(1) == (float) InputBase.IS_PRESSED)
+            if (res.get(1) == InputBase.IS_PRESSED)
 
                 return res.get(0);
         }
@@ -102,11 +112,11 @@ public class InputMap {
 
                 ArrayList<Float> res = results.get(entry.getKey());
 
-                if ((ik.active != 0) || (ik.input_state != ik.IS_UP)) {
+                if ((ik.active != 0) || (ik.inputState != ik.IS_UP)) {
 
                     res.clear();
                     res.add(ik.active);
-                    res.add((float) ik.input_state);
+                    res.add((float) ik.inputState);
                 }
             }
         }

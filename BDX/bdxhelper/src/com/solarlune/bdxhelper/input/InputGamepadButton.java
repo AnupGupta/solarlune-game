@@ -5,7 +5,7 @@ package com.solarlune.bdxhelper.input;
  */
 public class InputGamepadButton extends InputBase {
 
-    int buttonIndex;
+    public int buttonIndex;
 
     public InputGamepadButton(int buttonIndex, int gamepadIndex, float scalar){
 
@@ -26,7 +26,7 @@ public class InputGamepadButton extends InputBase {
         if (controller.getButton(buttonIndex))
             active = scalar;
 
-        super.poll();
+		super.poll();
 
     }
 

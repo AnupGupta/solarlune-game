@@ -3,7 +3,7 @@ package com.solarlune.bdxhelper;
 /**
  * Created by SolarLune on 1/15/2015.
  */
-public class API {
+public final class API {
 
     static public boolean atLeastBooleans(int reqNum, boolean... checks){
 
