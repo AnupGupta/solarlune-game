@@ -14,23 +14,31 @@ public class Flash extends Component {
 
 	Vector4f firstColor;
 	Vector4f secondColor;
+	float flashTime;
 
-	public Flash(GameObject g, Vector4f firstColor, Vector4f secondColor){
+	public Flash(GameObject g, Vector4f firstColor, Vector4f secondColor, float flashTime){
 
 		super(g);
-		state = flash;
+		state = main;
 
 		this.firstColor = firstColor;
 		this.secondColor = secondColor;
+		this.flashTime = flashTime;
 
 	}
 
-	private State flash = new State(){
+	public Flash(GameObject g, Vector4f secondColor){
+
+		this(g, new Vector4f(1, 1, 1, 1), secondColor, 1);
+
+	}
+
+	public State main = new State(){
 		public void main() {
 
 			Vector4f c = g.color();
 
-			float t = 0.5f + (float) Math.sin(Bdx.time * Math.PI) * 0.5f;
+			float t = 0.5f + (float) Math.sin((Bdx.time * Math.PI) * flashTime) * 0.5f;
 
 			c.x = firstColor.x + ((secondColor.x - firstColor.x) * t); // R
 			c.y = firstColor.y + ((secondColor.y - firstColor.y) * t); // G

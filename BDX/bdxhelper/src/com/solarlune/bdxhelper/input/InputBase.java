@@ -27,21 +27,6 @@ public class InputBase {
     public int povDirection;  // make sense to duplicate this across multiple classes
 	// povDirection is now a normal integer because it's easier to deal with across multiple areas.
 
-//    public InputBase(int input_type, int keyname){
-//
-//        this.input_type = input_type;
-//        this.keyname = keyname;
-//        this.reassignController(joy_index);
-//    }
-//
-//    public InputBase(int input_type, PovDirection povDirection){
-//
-//        this.input_type = input_type;
-//        this.keyname = 0;  // To expand out to multiple hat numbers
-//        this.reassignController(joy_index);
-//        this.povDirection = povDirection;
-//    }
-
     public void setGamepadIndex(int index){
         controllerIndex = index;
         this.controller = getControllers().get(index); // For joysticks
