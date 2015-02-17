@@ -21,29 +21,37 @@ public final class InputMap {
         if (!bindings.containsKey(bindingName))
             bindings.put(bindingName, new ArrayList<InputBase>());
 
-        ArrayList<InputBase> binding = bindings.get(bindingName);
+		ArrayList<Float> ar = new ArrayList<Float>();
 
-        binding.add(inputBase);
+		ar.add(0.0f);  // For current and past value
+		ar.add(0.0f);
+
+		results.put(bindingName, ar);
+
+        bindings.get(bindingName).add(inputBase);
 
     }
 
     static public void removeBinding(String bindingName){
 
-        if (bindings.containsKey(bindingName))
-            bindings.remove(bindingName);
+        if (bindings.containsKey(bindingName)) {
+			bindings.remove(bindingName);
+		}
+		if (results.containsKey(bindingName)) {
+			results.remove(bindingName);
+		}
     }
 
     static public void clear(){
         bindings.clear();
+		results.clear();
     }
 
     static public float bindDown(String bindName){
 
         if (results.containsKey(bindName)){
 
-            ArrayList<Float> res = results.get(bindName);
-
-            return res.get(0);
+			return results.get(bindName).get(1);
 
         }
 
@@ -62,9 +70,8 @@ public final class InputMap {
 
             ArrayList<Float> res = results.get(bindName);
 
-            if (res.get(1) == InputBase.IS_PRESSED)
-
-                return res.get(0);
+			if (res.get(1) != 0 && res.get(0) == 0)
+				return res.get(1);
         }
 
         return 0;
@@ -80,11 +87,11 @@ public final class InputMap {
 
         if (results.containsKey(bindName)){
 
-            ArrayList<Float> res = results.get(bindName);
+			ArrayList<Float> res = results.get(bindName);
 
-            if (res.get(1) == (float) InputBase.IS_RELEASED)
+			if (res.get(1) == 0 && res.get(0) != 0)
 
-                return res.get(0);
+				return res.get(1);
 
         }
 
@@ -99,28 +106,42 @@ public final class InputMap {
 
     static public void poll(){
 
-        for (Map.Entry<String, ArrayList<InputBase>> entry : bindings.entrySet() ) {
-
-            ArrayList<Float> ar = new ArrayList<Float>();
-            ar.add(0.0f);  // Active value
-            ar.add(0.0f);  // State
-            results.put(entry.getKey(), ar);
-
-            for (InputBase ik : bindings.get(entry.getKey())) {
-
-                ik.poll();
-
-                ArrayList<Float> res = results.get(entry.getKey());
-
-                if ((ik.active != 0) || (ik.inputState != ik.IS_UP)) {
-
-                    res.clear();
-                    res.add(ik.active);
-                    res.add((float) ik.inputState);
-                }
-            }
+        for (String binding : bindings.keySet() ) {
+            poll(binding);
         }
 
     }
+
+    static public void poll(String bindingName) {
+
+        for (InputBase ik : bindings.get(bindingName)) {
+
+            ik.poll();
+
+			results.get(bindingName).remove(0);
+			results.get(bindingName).add(ik.active);
+
+        }
+
+    }
+
+    static public void set(String bindingName, float value) {
+
+		results.get(bindingName).set(1, value);
+
+    }
+
+	static public void discard(String bindingName, boolean pastFrame) {
+
+		if (pastFrame)
+			results.get(bindingName).set(0, results.get(bindingName).get(1));
+		else
+			results.get(bindingName).set(1, results.get(bindingName).get(0));
+
+	}
+
+	static public void discard(String bindingName) {
+		discard(bindingName, true);
+	}
 
 }
