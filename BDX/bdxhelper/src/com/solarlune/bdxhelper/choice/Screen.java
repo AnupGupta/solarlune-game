@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class Screen {
 
     String name;
-    ArrayList<Choice> choices;
+    public ArrayList<Choice> choices;
     public boolean active = true;
     int currentChoiceIndex = 0;
 	GameObject owner;
