@@ -139,8 +139,6 @@ public class NodeMap {
 
                 c.alignAxisToVec(1, m.getPosition().minus(n.getPosition()));
 
-                System.out.println(n.getPosition().minus(m.getPosition()).length());
-
                 c.scale(1, n.getPosition().minus(m.getPosition()).length(), 1);
 
             }
