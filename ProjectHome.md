@@ -1,0 +1,1 @@
+This page is now deprecated as the project has been moved to [GitHub](https://github.com/SolarLune/SolHelp).
